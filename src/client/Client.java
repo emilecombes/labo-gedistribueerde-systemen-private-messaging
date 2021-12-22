@@ -11,27 +11,28 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
 public class Client extends UnicastRemoteObject implements ClientIF {
-  private static String hostName = "localhost";
-  private static String serviceName = "chatService";
-  private static String userName;
-  private static String clientServiceName;
+  ClientUI chatUI;
+  private String hostName = "localhost";
+  private String serviceName = "chatService";
+  private String userName;
+  private String clientServiceName;
 
-  protected static ServerIF serverIF;
+  protected ServerIF serverIF;
 
-
-  public Client(String userName) throws RemoteException {
+  public Client(ClientUI chat, String userName) throws RemoteException {
     super();
+    chatUI = chat;
     this.userName = userName;
     clientServiceName = "ClientListenService_" + userName;
   }
 
 
-  public static void main(String[] args) throws RemoteException{
+  public void start() throws RemoteException{
     try{
-      Naming.rebind("rmi://" + hostName + "/" + serviceName, new Client("Emile"));
+      Naming.rebind("rmi://" + hostName + "/" + serviceName, this);
       serverIF = (ServerIF) Naming.lookup("rmi://" + hostName + "/" + serviceName);
       registerWithServer(userName, hostName, clientServiceName);
-      System.out.println("client.Client is listening...");
+      System.out.println("Client is listening...");
     } catch (ConnectException e){
       System.err.println("Connection problem: " + e);
       e.printStackTrace();
@@ -40,7 +41,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     }
   }
 
-  public static void registerWithServer(String user, String host, String service){
+  public void registerWithServer(String user, String host, String service){
     try{
       serverIF.registerListener(user, host, service);
     } catch (Exception e){
@@ -48,7 +49,22 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     }
   }
 
+  @Override
   public void messageFromServer(String message) throws RemoteException {
     System.out.println(message);
+    chatUI.textArea.append(message);
+    chatUI.textArea.setCaretPosition(chatUI.textArea.getDocument().getLength());
   }
+
+  @Override
+  public void updateUserList(String[] currentUsers) throws RemoteException {
+    if(currentUsers.length < 2){
+      chatUI.privateMsgButton.setEnabled(false);
+    }
+    chatUI.userPanel.remove(chatUI.clientPanel);
+    chatUI.setClientPanel(currentUsers);
+    chatUI.clientPanel.repaint();
+    chatUI.clientPanel.revalidate();
+  }
+
 }
