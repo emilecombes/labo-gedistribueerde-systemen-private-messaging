@@ -30,7 +30,6 @@ public class ClientUI extends JFrame implements ActionListener {
   private JPanel textPanel, inputPanel;
   private JTextField textField;
   private String name, message;
-  private Font meiryoFont = new Font("Meiryo", Font.PLAIN, 14);
   private Border blankBorder = BorderFactory.createEmptyBorder(10, 10, 20, 10);//top,r,b,l
   private Client chatClient;
   private JList<String> list;
@@ -42,15 +41,6 @@ public class ClientUI extends JFrame implements ActionListener {
   protected JPanel clientPanel, userPanel;
 
   public static void main(String[] args) {
-    try {
-      for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels())
-        if ("Nimbus".equals(info.getName())) {
-          UIManager.setLookAndFeel(info.getClassName());
-          break;
-        }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
     new ClientUI();
   }
 
@@ -58,7 +48,6 @@ public class ClientUI extends JFrame implements ActionListener {
   public ClientUI() {
     frame = new JFrame("Client Chat Console");
     frame.addWindowListener(new java.awt.event.WindowAdapter() {
-
       @Override
       public void windowClosing(java.awt.event.WindowEvent windowEvent) {
         if (chatClient != null) {
@@ -83,7 +72,6 @@ public class ClientUI extends JFrame implements ActionListener {
 
     frame.add(c);
     frame.pack();
-    frame.setAlwaysOnTop(true);
     frame.setLocation(150, 150);
     textField.requestFocus();
 
@@ -96,14 +84,12 @@ public class ClientUI extends JFrame implements ActionListener {
     String welcome = "Welcome enter your name and press Start to begin\n";
     textArea = new JTextArea(welcome, 14, 34);
     textArea.setMargin(new Insets(10, 10, 10, 10));
-    textArea.setFont(meiryoFont);
     textArea.setLineWrap(true);
     textArea.setWrapStyleWord(true);
     textArea.setEditable(false);
     JScrollPane scrollPane = new JScrollPane(textArea);
     textPanel = new JPanel();
     textPanel.add(scrollPane);
-    textPanel.setFont(new Font("Meiryo", Font.PLAIN, 14));
     return textPanel;
   }
 
@@ -111,7 +97,6 @@ public class ClientUI extends JFrame implements ActionListener {
     inputPanel = new JPanel(new GridLayout(1, 1, 5, 5));
     inputPanel.setBorder(blankBorder);
     textField = new JTextField();
-    textField.setFont(meiryoFont);
     inputPanel.add(textField);
     return inputPanel;
   }
@@ -122,12 +107,10 @@ public class ClientUI extends JFrame implements ActionListener {
 
     JLabel userLabel = new JLabel(userStr, JLabel.CENTER);
     userPanel.add(userLabel, BorderLayout.NORTH);
-    userLabel.setFont(new Font("Meiryo", Font.PLAIN, 16));
 
     String[] noClientsYet = {"No other users"};
     setClientPanel(noClientsYet);
 
-    clientPanel.setFont(meiryoFont);
     userPanel.add(makeButtonPanel(), BorderLayout.SOUTH);
     userPanel.setBorder(blankBorder);
 
@@ -148,7 +131,6 @@ public class ClientUI extends JFrame implements ActionListener {
     list = new JList<>(listModel);
     list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
     list.setVisibleRowCount(8);
-    list.setFont(meiryoFont);
     JScrollPane listScrollPane = new JScrollPane(list);
 
     clientPanel.add(listScrollPane, BorderLayout.CENTER);

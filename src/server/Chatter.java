@@ -1,6 +1,6 @@
 package server;
 
-import client.ClientIF;
+import common.ClientIF;
 
 public class Chatter {
   private String name;

@@ -1,14 +1,11 @@
 package client;
 
-import server.ServerIF;
+import common.ClientIF;
+import common.ServerIF;
 
 import java.net.MalformedURLException;
-import java.rmi.Naming;
+import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
-
-import java.rmi.ConnectException;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
 
 public class Client extends UnicastRemoteObject implements ClientIF {
   ClientUI chatUI;
@@ -17,7 +14,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   private String userName;
   private String clientServiceName;
 
-  protected ServerIF serverIF;
+  public ServerIF serverIF;
 
   public Client(ClientUI chat, String userName) throws RemoteException {
     super();
@@ -27,24 +24,25 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   }
 
 
-  public void start() throws RemoteException{
-    try{
-      Naming.rebind("rmi://" + hostName + "/" + serviceName, this);
+  public void start() throws RemoteException {
+    try {
+      Naming.rebind("rmi://" + hostName + "/" + clientServiceName, this);
       serverIF = (ServerIF) Naming.lookup("rmi://" + hostName + "/" + serviceName);
-      registerWithServer(userName, hostName, clientServiceName);
-      System.out.println("Client is listening...");
-    } catch (ConnectException e){
+    } catch (ConnectException e) {
       System.err.println("Connection problem: " + e);
       e.printStackTrace();
-    } catch (NotBoundException | MalformedURLException e){
+    } catch (NotBoundException | MalformedURLException e) {
       e.printStackTrace();
     }
+
+    registerWithServer(userName, hostName, clientServiceName);
+    System.out.println("Client is listening...");
   }
 
-  public void registerWithServer(String user, String host, String service){
-    try{
+  public void registerWithServer(String user, String host, String service) {
+    try {
       serverIF.registerListener(user, host, service);
-    } catch (Exception e){
+    } catch (Exception e) {
       e.printStackTrace();
     }
   }
@@ -58,7 +56,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
 
   @Override
   public void updateUserList(String[] currentUsers) throws RemoteException {
-    if(currentUsers.length < 2){
+    if (currentUsers.length < 2) {
       chatUI.privateMsgButton.setEnabled(false);
     }
     chatUI.userPanel.remove(chatUI.clientPanel);

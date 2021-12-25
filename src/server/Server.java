@@ -1,15 +1,18 @@
 package server;
 
-import client.ClientIF;
+import common.ClientIF;
+import common.ServerIF;
 
-import java.rmi.Remote;
 import java.util.Vector;
 
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
+import java.rmi.server.RemoteRef;
 
 import java.rmi.RemoteException;
+import java.rmi.NotBoundException;
+import java.net.MalformedURLException;
 
 
 public class Server extends UnicastRemoteObject implements ServerIF {
@@ -30,9 +33,9 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     try{
       ServerIF server = new Server();
       Naming.rebind("rmi://" + hostName + "/" + serviceName, server);
-      System.out.println("Chat server.Server is running...");
+      System.out.println("Chat Server is running...");
     } catch (Exception e) {
-      System.err.println("server.Server exception: " + e);
+      System.err.println("Server exception: " + e);
       e.printStackTrace();
     }
   }
@@ -40,7 +43,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
   public static void startRMIRegistry(){
     try{
       LocateRegistry.createRegistry(1099);
-      System.out.println("RMI server.Server is ready");
+      System.out.println("RMI Server is ready");
     }catch (RemoteException e){
       e.printStackTrace();
     }
@@ -97,7 +100,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
   private void registerChatter(String user, String host, String service) {
     try{
       ClientIF newClient = (ClientIF) Naming.lookup(
-          "rmi://" + user + "/" + host + "/" + service
+          "rmi://" + host + "/" + service
       );
       chatters.addElement(new Chatter(user, newClient));
       newClient.messageFromServer("[server.Server]: " + "Welcome to the chat " + user + ".\n");
