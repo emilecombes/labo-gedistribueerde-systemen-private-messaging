@@ -49,9 +49,13 @@ public class Client extends UnicastRemoteObject implements ClientIF {
 
   @Override
   public void messageFromServer(String message) throws RemoteException {
-    System.out.println(message);
-    chatUI.textArea.append(message);
-    chatUI.textArea.setCaretPosition(chatUI.textArea.getDocument().getLength());
+    if(message.length() > 0) {
+      //Todo: Decrypteren
+
+      System.out.println(message);
+      chatUI.textArea.append(message);
+      chatUI.textArea.setCaretPosition(chatUI.textArea.getDocument().getLength());
+    }
   }
 
   @Override

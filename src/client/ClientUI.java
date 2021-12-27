@@ -8,6 +8,7 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.rmi.RemoteException;
+import java.util.Random;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
@@ -202,7 +203,20 @@ public class ClientUI extends JFrame implements ActionListener {
   }
 
   private void sendMessage(String chatMessage) throws RemoteException {
-    chatClient.serverIF.updateChat(name, chatMessage);
+    Random r = new Random();
+    //Todo: update bound to reflect server capacity
+    int idxNext = r.nextInt(10);
+    //Todo: tag?
+    int tagNext = 0;
+    String u = chatMessage + idxNext + tagNext;
+    //Todo: algemeen definiëren en initialiseren
+    int idx = 0;
+    int tag = 0;
+    String totaal = idx + u + tag;
+    chatClient.serverIF.updateChat(name, totaal);
+    idx = idxNext;
+    tag = tagNext;
+    //Todo: sleutel veranderen
   }
 
   private void sendPrivate(int[] privateList) throws RemoteException {
