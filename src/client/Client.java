@@ -2,12 +2,17 @@ package client;
 
 import common.ClientIF;
 import common.ServerIF;
+import models.CommunicationDetails;
 
 import javax.crypto.*;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.spec.KeySpec;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -31,13 +36,16 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   private SecretKey groupReceiveSecretKey;
 
   //PM:
-  private Map<String, Integer> idxSendMap;
-  private Map<String, Integer> tagSendMap;
-  private Map<String, Integer> idxReceiveMap;
-  private Map<String, Integer> tagReceiveMap;
-  //Sleutels voor PM
-  private Map<String, SecretKey> pmSendKeys;
-  private Map<String, SecretKey> pmReceiveKeys;
+  private Map<String, CommunicationDetails> sendMap = new HashMap<>();
+  private Map<String, CommunicationDetails> receiveMap = new HashMap<>();
+
+//  private Map<String, Integer> idxSendMap;
+//  private Map<String, Integer> tagSendMap;
+//  private Map<String, Integer> idxReceiveMap;
+//  private Map<String, Integer> tagReceiveMap;
+//  //Sleutels voor PM
+//  private Map<String, SecretKey> pmSendKeys;
+//  private Map<String, SecretKey> pmReceiveKeys;
 
   public ServerIF serverIF;
 
@@ -111,18 +119,27 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     } catch(Exception e) {
       e.printStackTrace();
     }
-    generateNewGroupKey();
+    generateNewSendGroupKey();
     groupIdx = idxNext;
     groupTag = tagNext;
     //Todo: sleutel veranderen
   }
 
-  private void generateNewGroupKey(){
+  private void generateNewSendGroupKey(){
     try {
-      //TODO: KDF die nieuwe AES genereerd op basis van bestaande: HKFD bibliotheek toevoegen?
       SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-//      KeySpec spec = new
-//      groupSendSecretKey = ;
+      KeySpec spec = new PBEKeySpec(groupSendSecretKey.toString().toCharArray());
+      groupSendSecretKey = new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
+    } catch(Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private void generateNewReceiveGroupKey(){
+    try {
+      SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+      KeySpec spec = new PBEKeySpec(groupReceiveSecretKey.toString().toCharArray());
+      groupReceiveSecretKey = new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
     } catch(Exception e) {
       e.printStackTrace();
     }
@@ -146,26 +163,41 @@ public class Client extends UnicastRemoteObject implements ClientIF {
       e.printStackTrace();
     }
     if(secretKey != null) {
-      idxSendMap.put(acceptor.userName, idx);
-      tagSendMap.put(acceptor.userName, tag);
-      pmSendKeys.put(acceptor.userName, secretKey);
-      acceptor.acceptBump(idx, tag, secretKey, this);
+      CommunicationDetails commDet = new CommunicationDetails(idx, tag, secretKey);
+      sendMap.put(acceptor.userName, commDet);
+//      idxSendMap.put(acceptor.userName, idx);
+//      tagSendMap.put(acceptor.userName, tag);
+//      pmSendKeys.put(acceptor.userName, secretKey);
+      acceptor.acceptBump(commDet, this);
     }
   }
 
-  //Accepteren van bump: values opslaan in ontvangMap
-  public void acceptBump(int idx, int tag, SecretKey secretKey, Client sender){
-    idxReceiveMap.put(sender.userName, idx);
-    tagReceiveMap.put(sender.userName, tag);
-    pmReceiveKeys.put(sender.userName, secretKey);
+  //Accepteren van bump: values opslaan in receiveMap
+  public void acceptBump(CommunicationDetails commDet, Client sender){
+    receiveMap.put(sender.userName, commDet);
+//    idxReceiveMap.put(sender.userName, idx);
+//    tagReceiveMap.put(sender.userName, tag);
+//    pmReceiveKeys.put(sender.userName, secretKey);
   }
 
   @Override
   public void messageFromServer(String message) throws RemoteException {
     if(message.length() > 0) {
       //Todo: Decrypteren en splitsen
-
-      System.out.println(message);
+      generateNewReceiveGroupKey();
+      String[] result = message.split("\\|");
+      String decryptedMesage = "Error";
+      try {
+        groupCipher.init(Cipher.DECRYPT_MODE, groupReceiveSecretKey);
+        byte[] decryptedByte = groupCipher.doFinal(result[1].getBytes());
+        String[] decrypted = new String(decryptedByte).split("\\|");
+        groupIdx = Integer.parseInt(decrypted[1]);
+        groupTag = Integer.parseInt(decrypted[2]);
+        decryptedMesage = decrypted[0];
+      } catch(Exception e) {
+        e.printStackTrace();
+      }
+      System.out.println(decryptedMesage);
       chatUI.textArea.append(message);
       chatUI.textArea.setCaretPosition(chatUI.textArea.getDocument().getLength());
     }
