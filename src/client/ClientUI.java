@@ -203,25 +203,11 @@ public class ClientUI extends JFrame implements ActionListener {
   }
 
   private void sendMessage(String chatMessage) throws RemoteException {
-    Random r = new Random();
-    //Todo: update bound to reflect server capacity
-    int idxNext = r.nextInt(10);
-    //Todo: tag?
-    int tagNext = 0;
-    String u = chatMessage + idxNext + tagNext;
-    //Todo: algemeen definiëren en initialiseren
-    int idx = 0;
-    int tag = 0;
-    String totaal = idx + u + tag;
-    chatClient.serverIF.updateChat(name, totaal);
-    idx = idxNext;
-    tag = tagNext;
-    //Todo: sleutel veranderen
+    chatClient.sendMessage(chatMessage, name);
   }
 
   private void sendPrivate(int[] privateList) throws RemoteException {
-    String privateMessage = "[PM from " + name + "] :" + message + "\n";
-    chatClient.serverIF.sendPM(privateList, privateMessage);
+    chatClient.sendPM(privateList, name, message);
   }
 
   private void getConnected(String userName) throws RemoteException {

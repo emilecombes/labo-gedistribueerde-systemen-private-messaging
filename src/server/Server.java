@@ -3,25 +3,31 @@ package server;
 import common.ClientIF;
 import common.ServerIF;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Vector;
 
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
-import java.rmi.server.RemoteRef;
 
 import java.rmi.RemoteException;
-import java.rmi.NotBoundException;
-import java.net.MalformedURLException;
 
 
 public class Server extends UnicastRemoteObject implements ServerIF {
   private Vector<Chatter> chatters;
+  //TODO: Object ipv byte-array?
+  private ArrayList<LinkedList<byte[]>> bulletinBoard;
+  private int bulletinBoardSize = 10;
 
   // Constructor
   public Server() throws RemoteException {
     super();
     chatters = new Vector<Chatter>(10, 1);
+    bulletinBoard = new ArrayList<>(bulletinBoardSize);
+    for(int i = 0; i < bulletinBoardSize; i++){
+      bulletinBoard.add(new LinkedList<byte[]>());
+    }
   }
 
   // Local Methods
@@ -56,8 +62,8 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     return "Hello " + clientName + " from chat server.";
   }
 
-  public void updateChat(String name, String post) throws RemoteException {
-    sendToAll(name + ": " + post + "\n");
+  public void updateChat(String name, byte[] post) throws RemoteException {
+    sendToAll(name + ": " + new String(post) + "\n");
   }
 
   public void updateUserList() {

@@ -10,7 +10,7 @@ public interface ServerIF extends Remote {
 
   void leaveChat(String userName) throws RemoteException;
 
-  void updateChat(String userName, String chatMessage) throws RemoteException;
+  void updateChat(String userName, byte[] chatMessage) throws RemoteException;
 
   void sendPM(int[] group, String message) throws RemoteException;
 }
