@@ -3,9 +3,11 @@ package server;
 import common.ClientIF;
 import common.ServerIF;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Vector;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import java.security.*;
+import java.util.*;
 
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
@@ -16,9 +18,10 @@ import java.rmi.RemoteException;
 
 public class Server extends UnicastRemoteObject implements ServerIF {
   private Vector<Chatter> chatters;
-  //TODO: Object ipv byte-array?
-  private ArrayList<LinkedList<byte[]>> bulletinBoard;
+  private ArrayList<LinkedHashMap<byte[], byte[]>> bulletinBoard;
   private int bulletinBoardSize = 10;
+  private KeyPair keyPair;
+  private Cipher serverCipher;
 
   // Constructor
   public Server() throws RemoteException {
@@ -26,7 +29,19 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     chatters = new Vector<Chatter>(10, 1);
     bulletinBoard = new ArrayList<>(bulletinBoardSize);
     for(int i = 0; i < bulletinBoardSize; i++){
-      bulletinBoard.add(new LinkedList<byte[]>());
+      bulletinBoard.add(new LinkedHashMap<>());
+    }
+    //Initialiseren keypair server
+    try{
+      KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+      keyPairGenerator.initialize(2048);
+      keyPair = keyPairGenerator.generateKeyPair();
+      PrivateKey priv = keyPair.getPrivate();
+
+      serverCipher = Cipher.getInstance("RSA");
+      serverCipher.init(Cipher.DECRYPT_MODE, priv);
+    } catch(Exception e){
+      e.printStackTrace();
     }
   }
 
@@ -44,6 +59,8 @@ public class Server extends UnicastRemoteObject implements ServerIF {
       System.err.println("Server exception: " + e);
       e.printStackTrace();
     }
+
+    //TODO: doorsturen public key naar clients
   }
 
   public static void startRMIRegistry(){
@@ -57,6 +74,42 @@ public class Server extends UnicastRemoteObject implements ServerIF {
 
 
   // Remote Methods
+  public byte[] getMessage(byte[] encrypted){
+    //Decrypt message from client
+    byte[] decrypted = decrypt(encrypted);
+    assert decrypted != null;
+    String[] request = new String(decrypted).split("\\|");
+    System.out.println("(1): " + request[0] + "(2): " + request[1]);
+    int idx = Integer.parseInt(request[0]);
+    String tag = request[1];
+    byte[] hashedTag = null;
+    try {
+      MessageDigest hash = MessageDigest.getInstance("SHA-512");
+      hash.update(tag.getBytes());
+      hashedTag = hash.digest();
+      String[] message = new String(bulletinBoard.get(idx).get(hashedTag)).split("\\|");
+      //TODO: return is niet gencrypteerd tussen server en client, wel door symm key
+      if(message.length>0){
+        bulletinBoard.get(idx).remove(hashedTag);
+        return message[1].getBytes();
+      }
+    } catch(Exception e) {
+      e.printStackTrace();
+    }
+    return new byte[0];
+  }
+
+  private byte[] decrypt(byte[] encrypted){
+    try {
+      return serverCipher.doFinal(encrypted);
+    } catch (IllegalBlockSizeException e) {
+      e.printStackTrace();
+    } catch (BadPaddingException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
   public String sayHello(String clientName) throws RemoteException {
     System.out.println(clientName + " sent a message");
     return "Hello " + clientName + " from chat server.";

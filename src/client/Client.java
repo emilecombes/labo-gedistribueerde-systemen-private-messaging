@@ -11,6 +11,10 @@ import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.spec.KeySpec;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,13 +43,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   private Map<String, CommunicationDetails> sendMap = new HashMap<>();
   private Map<String, CommunicationDetails> receiveMap = new HashMap<>();
 
-//  private Map<String, Integer> idxSendMap;
-//  private Map<String, Integer> tagSendMap;
-//  private Map<String, Integer> idxReceiveMap;
-//  private Map<String, Integer> tagReceiveMap;
-//  //Sleutels voor PM
-//  private Map<String, SecretKey> pmSendKeys;
-//  private Map<String, SecretKey> pmReceiveKeys;
+  Cipher serverCipher;
 
   public ServerIF serverIF;
 
@@ -70,6 +68,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     } catch (NotBoundException | MalformedURLException e) {
       e.printStackTrace();
     }
+    //Initialiseren symm key versturen groupchat
     try {
       KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
       groupSendSecretKey = keyGenerator.generateKey();
@@ -79,6 +78,19 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     }
 
     registerWithServer(userName, hostName, clientServiceName);
+
+    Cipher serverCipher = null;
+    try {
+      serverCipher = Cipher.getInstance("RSA");
+      //TODO: get server public key
+//      serverCipher.init(Cipher.ENCRYPT_MODE, serverPublKey);
+    } catch (NoSuchAlgorithmException e) {
+      e.printStackTrace();
+    } catch (NoSuchPaddingException e) {
+      e.printStackTrace();
+    }
+
+
     System.out.println("Client is listening...");
   }
 
@@ -165,9 +177,6 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     if(secretKey != null) {
       CommunicationDetails commDet = new CommunicationDetails(idx, tag, secretKey);
       sendMap.put(acceptor.userName, commDet);
-//      idxSendMap.put(acceptor.userName, idx);
-//      tagSendMap.put(acceptor.userName, tag);
-//      pmSendKeys.put(acceptor.userName, secretKey);
       acceptor.acceptBump(commDet, this);
     }
   }
@@ -175,9 +184,15 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   //Accepteren van bump: values opslaan in receiveMap
   public void acceptBump(CommunicationDetails commDet, Client sender){
     receiveMap.put(sender.userName, commDet);
-//    idxReceiveMap.put(sender.userName, idx);
-//    tagReceiveMap.put(sender.userName, tag);
-//    pmReceiveKeys.put(sender.userName, secretKey);
+  }
+
+  private byte[] encryptToServer(byte[] toEncrypt){
+    try {
+      return serverCipher.doFinal(toEncrypt);
+    } catch(Exception e){
+      e.printStackTrace();
+    }
+    return null;
   }
 
   @Override
