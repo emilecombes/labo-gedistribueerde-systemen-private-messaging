@@ -26,7 +26,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
   // Constructor
   public Server() throws RemoteException {
     super();
-    chatters = new Vector<Chatter>(10, 1);
+    chatters = new Vector<>(10, 1);
     bulletinBoard = new ArrayList<>(bulletinBoardSize);
     for(int i = 0; i < bulletinBoardSize; i++){
       bulletinBoard.add(new LinkedHashMap<>());
@@ -101,6 +101,11 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     return new byte[0];
   }
 
+  public void writeToBB(int idx, byte[] value, byte[] tag){
+    // TODO hash tag
+    bulletinBoard.get(idx).put(tag, value);
+  }
+
   private byte[] decrypt(byte[] encrypted){
     try {
       return serverCipher.doFinal(encrypted);
@@ -110,11 +115,6 @@ public class Server extends UnicastRemoteObject implements ServerIF {
       e.printStackTrace();
     }
     return null;
-  }
-
-  public String sayHello(String clientName) throws RemoteException {
-    System.out.println(clientName + " sent a message");
-    return "Hello " + clientName + " from chat server.";
   }
 
   public void updateChat(String name, byte[] post) throws RemoteException {
@@ -164,7 +164,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
           "rmi://" + host + "/" + service
       );
       chatters.addElement(new Chatter(user, newClient));
-      newClient.messageFromServer("[server.Server]: " + "Welcome to the chat " + user + ".\n");
+      newClient.messageFromServer("[Server]: " + "Welcome to the chat " + user + ".\n");
       updateUserList();
     } catch (Exception e) {
       e.printStackTrace();

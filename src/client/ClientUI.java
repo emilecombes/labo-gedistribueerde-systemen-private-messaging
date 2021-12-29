@@ -2,13 +2,11 @@ package client;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
-import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.rmi.RemoteException;
-import java.util.Random;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
@@ -22,8 +20,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
-import javax.swing.UIManager;
-import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.border.Border;
 
 public class ClientUI extends JFrame implements ActionListener {
@@ -168,7 +164,7 @@ public class ClientUI extends JFrame implements ActionListener {
         if (name.length() != 0) {
           frame.setTitle(name + "'s console ");
           textField.setText("");
-          textArea.append("username : " + name + " connecting to chat...\n");
+          textArea.append(name + " connecting to chat...\n");
           getConnected(name);
           startButton.setEnabled(false);
           sendButton.setEnabled(true);
@@ -182,14 +178,14 @@ public class ClientUI extends JFrame implements ActionListener {
         message = textField.getText();
         textField.setText("");
         sendMessage(message);
-        System.out.println("Sending message : " + message);
+        System.out.println("Sending message: " + message);
       }
 
       //send a private message, to selected users
       if (e.getSource() == privateMsgButton) {
         int[] privateList = list.getSelectedIndices();
         for (int j : privateList)
-          System.out.println("selected index :" + j);
+          System.out.println("selected index: " + j);
 
         message = textField.getText();
         textField.setText("");
@@ -203,7 +199,7 @@ public class ClientUI extends JFrame implements ActionListener {
   }
 
   private void sendMessage(String chatMessage) throws RemoteException {
-    chatClient.sendMessage(chatMessage, name);
+    chatClient.sendGroupMessage(chatMessage, name);
   }
 
   private void sendPrivate(int[] privateList) throws RemoteException {

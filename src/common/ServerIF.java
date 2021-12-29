@@ -14,4 +14,6 @@ public interface ServerIF extends Remote {
   void sendPM(int[] group, String message) throws RemoteException;
 
   byte[] getMessage(byte[] encryptedRequest);
+
+  void writeToBB(int idx, byte[] value, byte[] tag);
 }
