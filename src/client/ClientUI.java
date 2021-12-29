@@ -6,20 +6,11 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.rmi.RemoteException;
 
-import javax.swing.BorderFactory;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
+import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -36,7 +27,7 @@ public class ClientUI extends JFrame implements ActionListener {
 
   protected JTextArea textArea, userArea;
   protected JFrame frame;
-  protected JButton privateMsgButton, startButton, sendButton, bumpButton;
+  protected JButton privateMsgButton, startButton, sendButton, requestBumpButton, acceptBumpButton;
   protected JPanel clientPanel, userPanel;
 
   public static void main(String[] args) {
@@ -116,7 +107,8 @@ public class ClientUI extends JFrame implements ActionListener {
 
     if (currClients.length > 1) {
       privateMsgButton.setEnabled(true);
-      bumpButton.setEnabled(true);
+      requestBumpButton.setEnabled(true);
+      acceptBumpButton.setEnabled(true);
     }
 
     //Create the list and put it in a scroll pane.
@@ -126,7 +118,7 @@ public class ClientUI extends JFrame implements ActionListener {
     list.addListSelectionListener(new ListSelectionListener() {
       @Override
       public void valueChanged(ListSelectionEvent e) {
-        e.getFirstIndex()
+        e.getFirstIndex();
       }
     });
     JScrollPane listScrollPane = new JScrollPane(list);
@@ -136,21 +128,31 @@ public class ClientUI extends JFrame implements ActionListener {
   }
 
   public JPanel makeButtonPanel() {
-    sendButton = new JButton("Send ");
+    sendButton = new JButton("Send");
     sendButton.addActionListener(this);
     sendButton.setEnabled(false);
 
-    startButton = new JButton("Start ");
+    privateMsgButton = new JButton("Send PM");
+    privateMsgButton.addActionListener(this);
+    privateMsgButton.setEnabled(false);
+
+    startButton = new JButton("Start");
     startButton.addActionListener(this);
 
-    bumpButton = new JButton("Bump");
-    bumpButton.addActionListener(this);
-    bumpButton.setEnabled(false);
+    requestBumpButton = new JButton("Bump");
+    requestBumpButton.addActionListener(this);
+//    requestBumpButton.setEnabled(false);
+
+    acceptBumpButton = new JButton("Accept Bump");
+    acceptBumpButton.addActionListener(this);
+//    acceptBumpButton.setEnabled(false);
 
     JPanel buttonPanel = new JPanel(new GridLayout(4, 1));
+    buttonPanel.add(privateMsgButton);
     buttonPanel.add(startButton);
     buttonPanel.add(sendButton);
-    buttonPanel.add(bumpButton);
+    buttonPanel.add(requestBumpButton);
+    buttonPanel.add(acceptBumpButton);
 
     return buttonPanel;
   }
@@ -167,7 +169,7 @@ public class ClientUI extends JFrame implements ActionListener {
           textArea.append(name + " connecting to chat...\n");
           getConnected(name);
           startButton.setEnabled(false);
-          bumpButton.setEnabled(true);
+          requestBumpButton.setEnabled(true);
           textArea.append("Enter an id and press Bump to add a contact\n");
         } else {
           JOptionPane.showMessageDialog(frame, "Enter your name to Start");
@@ -194,21 +196,22 @@ public class ClientUI extends JFrame implements ActionListener {
       }
 
       // Bump
-      if (e.getSource() == bumpButton) {
-        int bumpee = Integer.parseInt(textField.getText());
-        chatClient.bumpJson(bumpee);
-        String bumpRequest = chatClient.bumpUser(bumpee);
+      if (e.getSource() == requestBumpButton) {
+        int receiver = list.getSelectedIndex();
+        chatClient.bumpJson(receiver);
+        String bumpRequest = chatClient.bumpUser(receiver);
         JOptionPane.showMessageDialog(frame, "Show these private communication attributes to your" +
             " new contact.\n" + bumpRequest);
       }
 
       // Accept Bump
-      if (e.getSource() == bumpAcceptButton) {
+      if (e.getSource() == acceptBumpButton) {
         int bumpee = Integer.parseInt(textField.getText());
         chatClient.bumpJson(bumpee);
         String bumpRequest = chatClient.bumpUser(bumpee);
         JOptionPane.showMessageDialog(frame, "Show these private communication attributes to your" +
                 " new contact.\n" + bumpRequest);
+        showBumpPane();
       }
 
     } catch (RemoteException remoteExc) {
@@ -217,6 +220,73 @@ public class ClientUI extends JFrame implements ActionListener {
 
   }
 
+  private void showBumpPane(){
+//    final JPanel bumpPanel = new JPanel(new GridLayout(3, 1, 5, 5));
+//    JPanel keyPanel = new JPanel(new GridLayout(1, 1, 5, 5));
+//    JTextField keyField = new JTextField("Key");
+//    keyPanel.add(keyField);
+//    JTextField tagField = new JTextField("tag");
+//    JTextField idxField = new JTextField("index");
+//
+//    bumpPanel.add(keyPanel);
+//    bumpPanel.add(tagField);
+//    bumpPanel.add(idxField);
+//
+//    bumpFrame.add(bumpPanel);
+//    bumpFrame.setSize(300, 300);
+//    bumpFrame.setLayout(null);
+//    bumpFrame.setVisible(true);
+
+
+
+
+    final JFrame bumpFrame = new JFrame("Accept Bump");
+    Container c = getContentPane();
+    JPanel bumpPanel = new JPanel(new BorderLayout());
+
+    JPanel keyPanel = new JPanel(new GridLayout(1, 1, 5, 5));
+    JTextField keyField = new JTextField("Key");
+    keyPanel.add(keyField);
+    bumpPanel.add(keyPanel);
+
+//    outerPanel.add(getInputPanel(), BorderLayout.CENTER);
+//    outerPanel.add(getTextPanel(), BorderLayout.NORTH);
+//    c.setLayout(new BorderLayout());
+//    c.add(outerPanel, BorderLayout.CENTER);
+//    c.add(getUsersPanel(), BorderLayout.WEST);
+
+    bumpFrame.add(c);
+    bumpFrame.pack();
+    bumpFrame.setLocation(150, 150);
+
+    bumpFrame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+    bumpFrame.setVisible(true);
+
+
+
+
+
+//    final JFrame f= new JFrame("PopupMenu Example");
+//    final JPopupMenu popupmenu = new JPopupMenu("Edit");
+//    JMenuItem cut = new JMenuItem("Cut");
+//    JMenuItem copy = new JMenuItem("Copy");
+//    JMenuItem paste = new JMenuItem("Paste");
+//    popupmenu.add(cut); popupmenu.add(copy); popupmenu.add(paste);
+//    f.addMouseListener(new MouseAdapter() {
+//      public void mouseClicked(MouseEvent e) {
+//        popupmenu.show(f , e.getX(), e.getY());
+//      }
+//    });
+//    f.add(popupmenu);
+//    f.setSize(300,300);
+//    f.setLayout(null);
+//    f.setVisible(true);
+  }
+
+//  private void sendMessage(String chatMessage) throws RemoteException {
+//    chatClient.sendGroupMessage(chatMessage, name);
+//  }
+//
   private void sendPrivate(int[] privateList) throws RemoteException {
     chatClient.sendPM(privateList[0], message);
   }
