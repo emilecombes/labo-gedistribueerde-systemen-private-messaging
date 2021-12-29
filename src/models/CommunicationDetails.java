@@ -12,4 +12,8 @@ public class CommunicationDetails {
         this.tag = tag;
         this.secretKey = secretKey;
     }
+
+    public SecretKey getKey(){
+        return secretKey;
+    }
 }

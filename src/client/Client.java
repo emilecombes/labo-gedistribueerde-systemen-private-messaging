@@ -9,6 +9,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.KeyPair;
@@ -84,9 +85,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
       serverCipher = Cipher.getInstance("RSA");
       //TODO: get server public key
 //      serverCipher.init(Cipher.ENCRYPT_MODE, serverPublKey);
-    } catch (NoSuchAlgorithmException e) {
-      e.printStackTrace();
-    } catch (NoSuchPaddingException e) {
+    } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
       e.printStackTrace();
     }
 
@@ -157,9 +156,26 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     }
   }
 
+  public void sendPM(int recipient, String message) throws RemoteException {
+    // TODO check if this & recipient have bumped already
+    String prefix = "[PM from " + userName + "]";
+    int nextIdx = random.nextInt(serverSize);
+    int nextTag = 0;
+    String value = prefix + message + '|' + nextIdx + '|' + nextTag;
+
+    try{
+      Cipher cipher = Cipher.getInstance("AES");
+      SecretKey key = sendMap.get(recipient).getKey();
+      cipher.init(Cipher.ENCRYPT_MODE, key);
+      byte[] encryptedValue = cipher.doFinal(value.getBytes());
+    }catch (Exception e){
+      e.printStackTrace();
+    }
+  }
+
   public void sendPM(int[] privateList, String name, String message) throws RemoteException {
     //TODO: alles
-    String privateMessage = "[PM from " + name + "] :" + message + "\n";
+    String privateMessage = "[PM from " + name + "]: " + message + "\n";
     serverIF.sendPM(privateList, privateMessage);
   }
 
