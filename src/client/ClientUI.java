@@ -48,12 +48,12 @@ public class ClientUI extends JFrame implements ActionListener {
       @Override
       public void windowClosing(java.awt.event.WindowEvent windowEvent) {
         if (chatClient != null) {
-          try {
-            sendMessage("Bye all, I'm leaving");
-            chatClient.serverIF.leaveChat(name);
-          } catch (RemoteException e) {
-            e.printStackTrace();
-          }
+//          try {
+////            sendMessage("Bye all, I'm leaving");
+////            chatClient.serverIF.leaveChat(name);
+//          } catch (RemoteException e) {
+//            e.printStackTrace();
+//          }
         }
         System.exit(0);
       }
@@ -183,7 +183,7 @@ public class ClientUI extends JFrame implements ActionListener {
       if (e.getSource() == sendButton) {
         message = textField.getText();
         textField.setText("");
-        sendMessage(message);
+//        sendMessage(message);
         System.out.println("Sending message: " + message);
       }
 
@@ -212,12 +212,12 @@ public class ClientUI extends JFrame implements ActionListener {
 
   }
 
-  private void sendMessage(String chatMessage) throws RemoteException {
-    chatClient.sendGroupMessage(chatMessage, name);
-  }
-
+//  private void sendMessage(String chatMessage) throws RemoteException {
+//    chatClient.sendGroupMessage(chatMessage, name);
+//  }
+//
   private void sendPrivate(int[] privateList) throws RemoteException {
-    chatClient.sendPM(privateList, name, message);
+    chatClient.sendPM(privateList[0], message);
   }
 
   private void getConnected(String userName) throws RemoteException {

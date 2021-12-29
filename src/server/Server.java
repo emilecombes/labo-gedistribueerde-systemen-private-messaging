@@ -59,8 +59,6 @@ public class Server extends UnicastRemoteObject implements ServerIF {
       System.err.println("Server exception: " + e);
       e.printStackTrace();
     }
-
-    //TODO: doorsturen public key naar clients
   }
 
   public static void startRMIRegistry(){
@@ -74,7 +72,8 @@ public class Server extends UnicastRemoteObject implements ServerIF {
 
 
   // Remote Methods
-  public byte[] getMessage(byte[] encryptedRequest){
+  @Override
+  public byte[] getMessage(byte[] encryptedRequest) throws RemoteException {
     //Decrypt message from client
     //TODO: veranderen als encryptie werkt
 //    byte[] decrypted = decrypt(encryptedRequest);
@@ -101,7 +100,8 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     return new byte[0];
   }
 
-  public void writeToBB(int idx, byte[] value, byte[] tag){
+  @Override
+  public void writeToBB(int idx, byte[] value, byte[] tag) throws RemoteException {
     // TODO hash tag
     bulletinBoard.get(idx).put(tag, value);
   }
@@ -117,20 +117,25 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     return null;
   }
 
-  public void updateChat(String name, byte[] post) throws RemoteException {
-    sendToAll(name + ": " + new String(post) + "\n");
+  @Override
+  public PublicKey getPublicKey() throws RemoteException {
+    return keyPair.getPublic();
   }
 
-  public void updateUserList() {
-    String[] currentUsers = getUserList();
-    for(Chatter c : chatters){
-      try {
-        c.getClient().updateUserList(currentUsers);
-      } catch (RemoteException e){
-        e.printStackTrace();
-      }
-    }
-  }
+//  public void updateChat(String name, byte[] post) throws RemoteException {
+//    sendToAll(name + ": " + new String(post) + "\n");
+//  }
+
+//  public void updateUserList() {
+//    String[] currentUsers = getUserList();
+//    for(Chatter c : chatters){
+//      try {
+//        c.getClient().updateUserList(currentUsers);
+//      } catch (RemoteException e){
+//        e.printStackTrace();
+//      }
+//    }
+//  }
 
   public String[] getUserList(){
     String[] allUsers = new String[chatters.size()];
@@ -140,60 +145,60 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     return allUsers;
   }
 
-  public void sendToAll(String message) {
-    for(Chatter c : chatters){
-      try {
-        c.getClient().messageFromServer(message);
-      } catch (RemoteException e){
-        e.printStackTrace();
-      }
-    }
-  }
+//  public void sendToAll(String message) {
+//    for(Chatter c : chatters){
+//      try {
+//        c.getClient().messageFromServer(message);
+//      } catch (RemoteException e){
+//        e.printStackTrace();
+//      }
+//    }
+//  }
 
-  @Override
-  public void registerListener(String user, String host, String service) throws RemoteException{
-    System.out.println(user + " has joined.");
-    System.out.println("hostname: " + host);
-    System.out.println("RMI service: " + service);
-    registerChatter(user, host, service);
-  }
+//  @Override
+//  public void registerListener(String user, String host, String service) throws RemoteException{
+//    System.out.println(user + " has joined.");
+//    System.out.println("hostname: " + host);
+//    System.out.println("RMI service: " + service);
+//    registerChatter(user, host, service);
+//  }
 
-  private void registerChatter(String user, String host, String service) {
-    try{
-      ClientIF newClient = (ClientIF) Naming.lookup(
-          "rmi://" + host + "/" + service
-      );
-      chatters.addElement(new Chatter(user, newClient));
-      newClient.messageFromServer("[Server]: " + "Welcome to the chat " + user + ".\n");
-      updateUserList();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
+//  private void registerChatter(String user, String host, String service) {
+//    try{
+//      ClientIF newClient = (ClientIF) Naming.lookup(
+//          "rmi://" + host + "/" + service
+//      );
+//      chatters.addElement(new Chatter(user, newClient));
+//      newClient.messageFromServer("[Server]: " + "Welcome to the chat " + user + ".\n");
+//      updateUserList();
+//    } catch (Exception e) {
+//      e.printStackTrace();
+//    }
+//  }
 
-  @Override
-  public void leaveChat(String user) throws RemoteException {
-    Chatter leaver = getChatter(user);
-    System.out.println(leaver.getName() + " left the chat.");
-    chatters.remove(getChatter(user));
-    updateUserList();
-  }
+//  @Override
+//  public void leaveChat(String user) throws RemoteException {
+//    Chatter leaver = getChatter(user);
+//    System.out.println(leaver.getName() + " left the chat.");
+//    chatters.remove(getChatter(user));
+//    updateUserList();
+//  }
 
-  public Chatter getChatter(String user){
-    for(Chatter c : chatters)
-      if(c.getName().equals(user))
+  public Chatter getChatter(String user) {
+    for (Chatter c : chatters)
+      if (c.getName().equals(user))
         return c;
     return null;
   }
 
-  @Override
-  public void sendPM(int[] group, String message) throws RemoteException {
-    Chatter privateConversation;
-    for(int i : group){
-      privateConversation = chatters.elementAt(i);
-      privateConversation.getClient().messageFromServer(message);
-    }
-  }
+//  @Override
+//  public void sendPM(int[] group, String message) throws RemoteException {
+//    Chatter privateConversation;
+//    for(int i : group){
+//      privateConversation = chatters.elementAt(i);
+//      privateConversation.getClient().messageFromServer(message);
+//    }
+//  }
 
 
 }
