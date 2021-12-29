@@ -34,7 +34,7 @@ public class ClientUI extends JFrame implements ActionListener {
 
   protected JTextArea textArea, userArea;
   protected JFrame frame;
-  protected JButton privateMsgButton, startButton, sendButton;
+  protected JButton privateMsgButton, startButton, sendButton, bumpButton;
   protected JPanel clientPanel, userPanel;
 
   public static void main(String[] args) {
@@ -118,11 +118,12 @@ public class ClientUI extends JFrame implements ActionListener {
     clientPanel = new JPanel(new BorderLayout());
     listModel = new DefaultListModel<>();
 
-    for (String s : currClients)
-      listModel.addElement(s);
+    for (String s : currClients) listModel.addElement(s);
 
-    if (currClients.length > 1)
+    if (currClients.length > 1) {
       privateMsgButton.setEnabled(true);
+      bumpButton.setEnabled(true);
+    }
 
     //Create the list and put it in a scroll pane.
     list = new JList<>(listModel);
@@ -146,11 +147,16 @@ public class ClientUI extends JFrame implements ActionListener {
     startButton = new JButton("Start ");
     startButton.addActionListener(this);
 
+    bumpButton = new JButton("Bump");
+    bumpButton.addActionListener(this);
+    bumpButton.setEnabled(false);
+
     JPanel buttonPanel = new JPanel(new GridLayout(4, 1));
     buttonPanel.add(privateMsgButton);
     buttonPanel.add(new JLabel(""));
     buttonPanel.add(startButton);
     buttonPanel.add(sendButton);
+    buttonPanel.add(bumpButton);
 
     return buttonPanel;
   }
@@ -158,7 +164,7 @@ public class ClientUI extends JFrame implements ActionListener {
   @Override
   public void actionPerformed(ActionEvent e) {
     try {
-      //get connected to chat service
+      // Get Connected
       if (e.getSource() == startButton) {
         name = textField.getText();
         if (name.length() != 0) {
@@ -173,7 +179,7 @@ public class ClientUI extends JFrame implements ActionListener {
         }
       }
 
-      //get text and clear textField
+      // Send Message
       if (e.getSource() == sendButton) {
         message = textField.getText();
         textField.setText("");
@@ -181,7 +187,7 @@ public class ClientUI extends JFrame implements ActionListener {
         System.out.println("Sending message: " + message);
       }
 
-      //send a private message, to selected users
+      // Send PM
       if (e.getSource() == privateMsgButton) {
         int[] privateList = list.getSelectedIndices();
         for (int j : privateList)
@@ -190,6 +196,14 @@ public class ClientUI extends JFrame implements ActionListener {
         message = textField.getText();
         textField.setText("");
         sendPrivate(privateList);
+      }
+
+      // Bump
+      if (e.getSource() == bumpButton) {
+        int bumpee = list.getSelectedIndex();
+        String bumpRequest = chatClient.bumpUser(bumpee);
+        JOptionPane.showMessageDialog(frame, "Show these private communication attributes to your" +
+            " new contact.\n" + bumpRequest);
       }
 
     } catch (RemoteException remoteExc) {

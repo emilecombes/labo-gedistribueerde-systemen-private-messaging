@@ -13,7 +13,7 @@ public interface ServerIF extends Remote {
 
   void sendPM(int[] group, String message) throws RemoteException;
 
-  byte[] getMessage(byte[] encryptedRequest);
+  byte[] getMessage(byte[] encryptedRequest) throws RemoteException;
 
-  void writeToBB(int idx, byte[] value, byte[] tag);
+  void writeToBB(int idx, byte[] value, byte[] tag) throws RemoteException;
 }

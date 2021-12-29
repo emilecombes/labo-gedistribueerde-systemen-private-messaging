@@ -84,30 +84,29 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     System.out.println("Client is listening...");
   }
 
-  private void generateNewSendGroupKey(){
+  private void generateNewSendGroupKey() {
     try {
       SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
       KeySpec spec = new PBEKeySpec(groupSendSecretKey.toString().toCharArray());
       groupSendSecretKey = new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
-    } catch(Exception e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
   }
 
-  private void generateNewReceiveGroupKey(){
+  private void generateNewReceiveGroupKey() {
     try {
       SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
       KeySpec spec = new PBEKeySpec(groupReceiveSecretKey.toString().toCharArray());
       groupReceiveSecretKey = new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
-    } catch(Exception e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
   }
 
 
-
   public void sendPM(int recipient, String message) throws RemoteException {
-    if(sendMap.containsKey(recipient)) {
+    if (sendMap.containsKey(recipient)) {
       String prefix = "[PM from " + userName + "]: ";
       int nextIdx = random.nextInt(serverSize);
       int nextTag = 0;
@@ -119,6 +118,8 @@ public class Client extends UnicastRemoteObject implements ClientIF {
         SecretKey key = sendMap.get(recipient).getKey();
         cipher.init(Cipher.ENCRYPT_MODE, key);
         byte[] encryptedValue = cipher.doFinal(value.getBytes());
+
+        // TODO RSA
 
         // Write to bulletin board
         serverIF.writeToBB(sendMap.get(recipient).getIdx(),
@@ -133,10 +134,11 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   }
 
   public void getPM(int sender) throws RemoteException {
-    if(receiveMap.containsKey(sender)) {
+    if (receiveMap.containsKey(sender)) {
       // Create request message
       byte[] separator = "|".getBytes();
-      byte[] buffer = new byte[Integer.BYTES + separator.length + receiveMap.get(sender).getTag().length];
+      byte[] buffer =
+          new byte[Integer.BYTES + separator.length + receiveMap.get(sender).getTag().length];
       ByteBuffer buff = ByteBuffer.wrap(buffer);
       buff.putInt(receiveMap.get(sender).getIdx());
       buff.put(separator);
@@ -153,10 +155,10 @@ public class Client extends UnicastRemoteObject implements ClientIF {
         Cipher cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.DECRYPT_MODE, receiveMap.get(sender).getKey());
         decryptedMessage = cipher.doFinal(encryptedMessage);
-      } catch(Exception e) {
+      } catch (Exception e) {
         e.printStackTrace();
       }
-      if(decryptedMessage.length > 0){
+      if (decryptedMessage.length > 0) {
         String[] message = new String(decryptedMessage).split("\\|");
 
         int newIdx = Integer.parseInt(message[0]);
@@ -175,8 +177,22 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     }
   }
 
+  public String bumpUser(int id) {
+    try {
+      int idx = random.nextInt(serverSize);
+      byte[] tag = new byte[tagSize];
+      KeyGenerator kg = KeyGenerator.getInstance("AES");
+      SecretKey sk = kg.generateKey();
+      sendMap.put(id, new CommunicationDetails(idx, tag, sk));
+      return sendMap.get(id).getBumpRequest();
+    } catch (NoSuchAlgorithmException e) {
+      e.printStackTrace();
+    }
+    return "Bump failed.";
+  }
+
   //Versturen van bump: genereren van values, opslaan in eigen sendMap en doorgeven naar acceptBump
-  public void sendBump(Client acceptor){
+  public void sendBump(Client acceptor) {
     int idx = random.nextInt(serverSize);
     byte[] tag = new byte[tagSize];
     random.nextBytes(tag);
@@ -184,10 +200,10 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     try {
       KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
       secretKey = keyGenerator.generateKey();
-    } catch(Exception e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
-    if(secretKey != null) {
+    if (secretKey != null) {
       CommunicationDetails commDet = new CommunicationDetails(idx, tag, secretKey);
       sendMap.put(acceptor.id, commDet);
       acceptor.acceptBump(commDet, this);
@@ -195,14 +211,14 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   }
 
   //Accepteren van bump: values opslaan in receiveMap
-  public void acceptBump(CommunicationDetails commDet, Client sender){
+  public void acceptBump(CommunicationDetails commDet, Client sender) {
     receiveMap.put(sender.id, commDet);
   }
 
-  private byte[] encryptToServer(byte[] toEncrypt){
+  private byte[] encryptToServer(byte[] toEncrypt) {
     try {
       return serverCipher.doFinal(toEncrypt);
-    } catch(Exception e){
+    } catch (Exception e) {
       e.printStackTrace();
     }
     return null;
@@ -216,7 +232,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
 
   @Override
   public void messageFromServer(String message) throws RemoteException {
-    if(message.length() > 0) {
+    if (message.length() > 0) {
       //Todo: Decrypteren en splitsen
       generateNewReceiveGroupKey();
       String[] result = message.split("\\|");
@@ -228,7 +244,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
         groupIdx = Integer.parseInt(decrypted[1]);
         groupTag = Integer.parseInt(decrypted[2]);
         decryptedMesage = decrypted[0];
-      } catch(Exception e) {
+      } catch (Exception e) {
         e.printStackTrace();
       }
       System.out.println(decryptedMesage);
@@ -262,7 +278,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
       byte[] encrypted = groupCipher.doFinal(toEncrypt);
       byte[] seperator = "|".getBytes();
 
-      byte[] totaal = new byte[Integer.BYTES*2 + encrypted.length + seperator.length*2];
+      byte[] totaal = new byte[Integer.BYTES * 2 + encrypted.length + seperator.length * 2];
       ByteBuffer buff = ByteBuffer.wrap(totaal);
       buff.putInt(groupIdx);
       buff.put(seperator);
@@ -272,7 +288,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
       byte[] combined = buff.array();
       serverIF.updateChat(name, combined);
 
-    } catch(Exception e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
     generateNewSendGroupKey();
