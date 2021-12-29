@@ -7,6 +7,7 @@ import models.CommunicationDetails;
 import javax.crypto.*;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.rmi.*;
@@ -57,11 +58,6 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     id = nummer;
     nummer++;
   }
-
-  public void main(String[] args){
-
-  }
-
 
   public void start() throws RemoteException {
     try {
@@ -204,6 +200,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     try {
       int idx = random.nextInt(serverSize);
       byte[] tag = new byte[tagSize];
+      random.nextBytes(tag);
       KeyGenerator kg = KeyGenerator.getInstance("AES");
       SecretKey sk = kg.generateKey();
       sendMap.put(id, new CommunicationDetails(idx, tag, sk));
@@ -212,6 +209,42 @@ public class Client extends UnicastRemoteObject implements ClientIF {
       e.printStackTrace();
     }
     return "Bump failed.";
+  }
+
+  public void bumpJson(int id) {
+    try {
+      int idx = random.nextInt(serverSize);
+      byte[] tag = new byte[tagSize];
+      random.nextBytes(tag);
+      KeyGenerator kg = KeyGenerator.getInstance("AES");
+      SecretKey sk = kg.generateKey();
+      CommunicationDetails commDet = new CommunicationDetails(idx, tag, sk);
+      sendMap.put(id, commDet);
+
+      FileOutputStream fileOut =
+              new FileOutputStream("/tmp/commDet.ser");
+      ObjectOutputStream out = new ObjectOutputStream(fileOut);
+      out.writeObject(commDet);
+      out.close();
+      fileOut.close();
+    } catch (NoSuchAlgorithmException | IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void receiveBumpJson(int id){
+    CommunicationDetails commDet = null;
+    try {
+      FileInputStream fileIn = new FileInputStream("/tmp/commDet.ser");
+      ObjectInputStream in = new ObjectInputStream(fileIn);
+      commDet = (CommunicationDetails) in.readObject();
+      in.close();
+      fileIn.close();
+    } catch (IOException | ClassNotFoundException i) {
+      i.printStackTrace();
+      return;
+    }
+    receiveMap.put(id, commDet);
   }
 
   //Versturen van bump: genereren van values, opslaan in eigen sendMap en doorgeven naar acceptBump

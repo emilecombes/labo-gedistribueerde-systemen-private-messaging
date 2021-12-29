@@ -21,6 +21,8 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.border.Border;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 public class ClientUI extends JFrame implements ActionListener {
   private static final long serialVersionUID = 1L;
@@ -47,14 +49,6 @@ public class ClientUI extends JFrame implements ActionListener {
     frame.addWindowListener(new java.awt.event.WindowAdapter() {
       @Override
       public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-        if (chatClient != null) {
-//          try {
-////            sendMessage("Bye all, I'm leaving");
-////            chatClient.serverIF.leaveChat(name);
-//          } catch (RemoteException e) {
-//            e.printStackTrace();
-//          }
-        }
         System.exit(0);
       }
     });
@@ -78,7 +72,7 @@ public class ClientUI extends JFrame implements ActionListener {
 
 
   public JPanel getTextPanel() {
-    String welcome = "Welcome enter your name and press Start to begin\n";
+    String welcome = "Welcome, enter your name and press Start to begin\n";
     textArea = new JTextArea(welcome, 14, 34);
     textArea.setMargin(new Insets(10, 10, 10, 10));
     textArea.setLineWrap(true);
@@ -129,6 +123,12 @@ public class ClientUI extends JFrame implements ActionListener {
     list = new JList<>(listModel);
     list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
     list.setVisibleRowCount(8);
+    list.addListSelectionListener(new ListSelectionListener() {
+      @Override
+      public void valueChanged(ListSelectionEvent e) {
+        e.getFirstIndex()
+      }
+    });
     JScrollPane listScrollPane = new JScrollPane(list);
 
     clientPanel.add(listScrollPane, BorderLayout.CENTER);
@@ -140,10 +140,6 @@ public class ClientUI extends JFrame implements ActionListener {
     sendButton.addActionListener(this);
     sendButton.setEnabled(false);
 
-    privateMsgButton = new JButton("Send PM");
-    privateMsgButton.addActionListener(this);
-    privateMsgButton.setEnabled(false);
-
     startButton = new JButton("Start ");
     startButton.addActionListener(this);
 
@@ -152,8 +148,6 @@ public class ClientUI extends JFrame implements ActionListener {
     bumpButton.setEnabled(false);
 
     JPanel buttonPanel = new JPanel(new GridLayout(4, 1));
-    buttonPanel.add(privateMsgButton);
-    buttonPanel.add(new JLabel(""));
     buttonPanel.add(startButton);
     buttonPanel.add(sendButton);
     buttonPanel.add(bumpButton);
@@ -173,7 +167,8 @@ public class ClientUI extends JFrame implements ActionListener {
           textArea.append(name + " connecting to chat...\n");
           getConnected(name);
           startButton.setEnabled(false);
-          sendButton.setEnabled(true);
+          bumpButton.setEnabled(true);
+          textArea.append("Enter an id and press Bump to add a contact\n");
         } else {
           JOptionPane.showMessageDialog(frame, "Enter your name to Start");
         }
@@ -200,10 +195,20 @@ public class ClientUI extends JFrame implements ActionListener {
 
       // Bump
       if (e.getSource() == bumpButton) {
-        int bumpee = list.getSelectedIndex();
+        int bumpee = Integer.parseInt(textField.getText());
+        chatClient.bumpJson(bumpee);
         String bumpRequest = chatClient.bumpUser(bumpee);
         JOptionPane.showMessageDialog(frame, "Show these private communication attributes to your" +
             " new contact.\n" + bumpRequest);
+      }
+
+      // Accept Bump
+      if (e.getSource() == bumpAcceptButton) {
+        int bumpee = Integer.parseInt(textField.getText());
+        chatClient.bumpJson(bumpee);
+        String bumpRequest = chatClient.bumpUser(bumpee);
+        JOptionPane.showMessageDialog(frame, "Show these private communication attributes to your" +
+                " new contact.\n" + bumpRequest);
       }
 
     } catch (RemoteException remoteExc) {
@@ -212,10 +217,6 @@ public class ClientUI extends JFrame implements ActionListener {
 
   }
 
-//  private void sendMessage(String chatMessage) throws RemoteException {
-//    chatClient.sendGroupMessage(chatMessage, name);
-//  }
-//
   private void sendPrivate(int[] privateList) throws RemoteException {
     chatClient.sendPM(privateList[0], message);
   }

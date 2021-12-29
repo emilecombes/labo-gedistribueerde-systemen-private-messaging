@@ -75,9 +75,8 @@ public class Server extends UnicastRemoteObject implements ServerIF {
   @Override
   public byte[] getMessage(byte[] encryptedRequest) throws RemoteException {
     //Decrypt message from client
-    //TODO: veranderen als encryptie werkt
-//    byte[] decrypted = decrypt(encryptedRequest);
-    byte[] decrypted = encryptedRequest;
+    byte[] decrypted = decrypt(encryptedRequest);
+//    byte[] decrypted = encryptedRequest;
     assert decrypted != null;
     String[] request = new String(decrypted).split("\\|");
     System.out.println("(1): " + request[0] + "(2): " + request[1]);
@@ -102,7 +101,6 @@ public class Server extends UnicastRemoteObject implements ServerIF {
 
   @Override
   public void writeToBB(int idx, byte[] value, byte[] tag) throws RemoteException {
-    // TODO hash tag
     bulletinBoard.get(idx).put(tag, value);
   }
 
