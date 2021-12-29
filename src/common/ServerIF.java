@@ -12,4 +12,6 @@ public interface ServerIF extends Remote {
   void updateChat(String userName, byte[] chatMessage) throws RemoteException;
 
   void sendPM(int[] group, String message) throws RemoteException;
+
+  byte[] getMessage(byte[] encryptedRequest);
 }

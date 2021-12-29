@@ -74,11 +74,11 @@ public class Server extends UnicastRemoteObject implements ServerIF {
 
 
   // Remote Methods
-  public byte[] getMessage(byte[] encrypted){
+  public byte[] getMessage(byte[] encryptedRequest){
     //Decrypt message from client
     //TODO: veranderen als encryptie werkt
-//    byte[] decrypted = decrypt(encrypted);
-    byte[] decrypted = encrypted;
+//    byte[] decrypted = decrypt(encryptedRequest);
+    byte[] decrypted = encryptedRequest;
     assert decrypted != null;
     String[] request = new String(decrypted).split("\\|");
     System.out.println("(1): " + request[0] + "(2): " + request[1]);

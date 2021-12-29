@@ -31,6 +31,8 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   private int serverSize = 10;
   private int tagSize = 100;
   private Random random = new Random();
+  private int id;
+  private static int nummer = 0;
 
   //Group:
   private int groupIdx;
@@ -41,8 +43,8 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   private SecretKey groupReceiveSecretKey;
 
   //PM:
-  private Map<String, CommunicationDetails> sendMap = new HashMap<>();
-  private Map<String, CommunicationDetails> receiveMap = new HashMap<>();
+  private Map<Integer, CommunicationDetails> sendMap = new HashMap<>();
+  private Map<Integer, CommunicationDetails> receiveMap = new HashMap<>();
 
   Cipher serverCipher;
 
@@ -54,8 +56,9 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     this.userName = userName;
     clientServiceName = "ClientListenService_" + userName;
     groupIdx = random.nextInt(serverSize);
-    //Todo: moet tag String zijn?
     groupTag = random.nextInt(100);
+    id = nummer;
+    nummer++;
   }
 
 
@@ -110,9 +113,6 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     byte[] toEncrypt = u.getBytes();
 
     try {
-      //Todo: volgende 2 lijnen moeten bij init
-
-
       groupCipher.init(Cipher.ENCRYPT_MODE, groupSendSecretKey);
       byte[] encrypted = groupCipher.doFinal(toEncrypt);
       byte[] seperator = "|".getBytes();
@@ -157,32 +157,74 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   }
 
   public void sendPM(int recipient, String message) throws RemoteException {
-    // TODO check if this & recipient have bumped already
-    String prefix = "[PM from " + userName + "]";
-    int nextIdx = random.nextInt(serverSize);
-    int nextTag = 0;
-    String value = prefix + message + '|' + nextIdx + '|' + nextTag;
+    if(sendMap.containsKey(recipient)) {
+      String prefix = "[PM from " + userName + "]: ";
+      int nextIdx = random.nextInt(serverSize);
+      int nextTag = 0;
+      String value = prefix + message + '|' + nextIdx + '|' + nextTag;
 
-    try{
-      Cipher cipher = Cipher.getInstance("AES");
-      SecretKey key = sendMap.get(recipient).getKey();
-      cipher.init(Cipher.ENCRYPT_MODE, key);
-      byte[] encryptedValue = cipher.doFinal(value.getBytes());
-    }catch (Exception e){
-      e.printStackTrace();
+      try {
+        Cipher cipher = Cipher.getInstance("AES");
+        SecretKey key = sendMap.get(recipient).getKey();
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] encryptedValue = cipher.doFinal(value.getBytes());
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    } else {
+      System.out.println("Gebruiker niet gevonden");
     }
   }
 
-  public void sendPM(int[] privateList, String name, String message) throws RemoteException {
-    //TODO: alles
-    String privateMessage = "[PM from " + name + "]: " + message + "\n";
-    serverIF.sendPM(privateList, privateMessage);
+  public void getPM(int sender) throws RemoteException {
+    if(receiveMap.containsKey(sender)) {
+      //Create request message
+      byte[] seperator = "|".getBytes();
+      byte[] buffer = new byte[Integer.BYTES + seperator.length + receiveMap.get(sender).getTag().length];
+      ByteBuffer buff = ByteBuffer.wrap(buffer);
+      buff.putInt(receiveMap.get(sender).getIdx());
+      buff.put(seperator);
+      buff.put(receiveMap.get(sender).getTag());
+      byte[] request = buff.array();
+
+      //Encrypt message to server
+      byte[] encrypted = encryptToServer(request);
+
+      //Get message from server
+      byte[] encryptedMessage = serverIF.getMessage(encrypted);
+      byte[] decryptedMessage = new byte[0];
+      try {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.DECRYPT_MODE, receiveMap.get(sender).getKey());
+        decryptedMessage = cipher.doFinal(encryptedMessage);
+      } catch(Exception e) {
+        e.printStackTrace();
+      }
+      if(decryptedMessage.length > 0){
+        String[] message = new String(decryptedMessage).split("\\|");
+
+        int newIdx = Integer.parseInt(message[0]);
+        byte[] newTag = message[2].getBytes();
+        //TODO: nieuwe key genereren
+        SecretKey newKey = receiveMap.get(sender).getKey();
+        CommunicationDetails newCommDet = new CommunicationDetails(newIdx, newTag, newKey);
+        receiveMap.put(sender, newCommDet);
+
+        System.out.println(message[1]);
+        chatUI.textArea.append(message[1]);
+        chatUI.textArea.setCaretPosition(chatUI.textArea.getDocument().getLength());
+      }
+
+    } else {
+      System.out.println("Gebruiker niet gevonden");
+    }
   }
 
   //Versturen van bump: genereren van values, opslaan in eigen sendMap en doorgeven naar acceptBump
   public void sendBump(Client acceptor){
     int idx = random.nextInt(serverSize);
-    int tag = random.nextInt(tagSize);
+    byte[] tag = new byte[tagSize];
+    random.nextBytes(tag);
     SecretKey secretKey = null;
     try {
       KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
@@ -192,14 +234,14 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     }
     if(secretKey != null) {
       CommunicationDetails commDet = new CommunicationDetails(idx, tag, secretKey);
-      sendMap.put(acceptor.userName, commDet);
+      sendMap.put(acceptor.id, commDet);
       acceptor.acceptBump(commDet, this);
     }
   }
 
   //Accepteren van bump: values opslaan in receiveMap
   public void acceptBump(CommunicationDetails commDet, Client sender){
-    receiveMap.put(sender.userName, commDet);
+    receiveMap.put(sender.id, commDet);
   }
 
   private byte[] encryptToServer(byte[] toEncrypt){
@@ -211,6 +253,11 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     return null;
   }
 
+  public void sendPM(int[] privateList, String name, String message) throws RemoteException {
+    //TODO: alles
+    String privateMessage = "[PM from " + name + "]: " + message + "\n";
+    serverIF.sendPM(privateList, privateMessage);
+  }
   @Override
   public void messageFromServer(String message) throws RemoteException {
     if(message.length() > 0) {
