@@ -6,20 +6,11 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.rmi.RemoteException;
 
-import javax.swing.BorderFactory;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
+import javax.swing.*;
 import javax.swing.border.Border;
 
 public class ClientUI extends JFrame implements ActionListener {
@@ -34,7 +25,7 @@ public class ClientUI extends JFrame implements ActionListener {
 
   protected JTextArea textArea, userArea;
   protected JFrame frame;
-  protected JButton privateMsgButton, startButton, sendButton, bumpButton;
+  protected JButton privateMsgButton, startButton, sendButton, requestBumpButton, acceptBumpButton;
   protected JPanel clientPanel, userPanel;
 
   public static void main(String[] args) {
@@ -122,7 +113,8 @@ public class ClientUI extends JFrame implements ActionListener {
 
     if (currClients.length > 1) {
       privateMsgButton.setEnabled(true);
-      bumpButton.setEnabled(true);
+      requestBumpButton.setEnabled(true);
+      acceptBumpButton.setEnabled(true);
     }
 
     //Create the list and put it in a scroll pane.
@@ -136,7 +128,7 @@ public class ClientUI extends JFrame implements ActionListener {
   }
 
   public JPanel makeButtonPanel() {
-    sendButton = new JButton("Send ");
+    sendButton = new JButton("Send");
     sendButton.addActionListener(this);
     sendButton.setEnabled(false);
 
@@ -144,19 +136,23 @@ public class ClientUI extends JFrame implements ActionListener {
     privateMsgButton.addActionListener(this);
     privateMsgButton.setEnabled(false);
 
-    startButton = new JButton("Start ");
+    startButton = new JButton("Start");
     startButton.addActionListener(this);
 
-    bumpButton = new JButton("Bump");
-    bumpButton.addActionListener(this);
-    bumpButton.setEnabled(false);
+    requestBumpButton = new JButton("Bump");
+    requestBumpButton.addActionListener(this);
+//    requestBumpButton.setEnabled(false);
+
+    acceptBumpButton = new JButton("Accept Bump");
+    acceptBumpButton.addActionListener(this);
+//    acceptBumpButton.setEnabled(false);
 
     JPanel buttonPanel = new JPanel(new GridLayout(4, 1));
     buttonPanel.add(privateMsgButton);
-    buttonPanel.add(new JLabel(""));
     buttonPanel.add(startButton);
     buttonPanel.add(sendButton);
-    buttonPanel.add(bumpButton);
+    buttonPanel.add(requestBumpButton);
+    buttonPanel.add(acceptBumpButton);
 
     return buttonPanel;
   }
@@ -199,17 +195,86 @@ public class ClientUI extends JFrame implements ActionListener {
       }
 
       // Bump
-      if (e.getSource() == bumpButton) {
-        int bumpee = list.getSelectedIndex();
-        String bumpRequest = chatClient.bumpUser(bumpee);
+      if (e.getSource() == requestBumpButton) {
+        int receiver = list.getSelectedIndex();
+        String bumpRequest = chatClient.bumpUser(receiver);
         JOptionPane.showMessageDialog(frame, "Show these private communication attributes to your" +
             " new contact.\n" + bumpRequest);
+      }
+
+      // Accept Bump
+      if(e.getSource() == acceptBumpButton) {
+        int sender = list.getSelectedIndex();
+        showBumpPane();
       }
 
     } catch (RemoteException remoteExc) {
       remoteExc.printStackTrace();
     }
 
+  }
+
+  private void showBumpPane(){
+//    final JPanel bumpPanel = new JPanel(new GridLayout(3, 1, 5, 5));
+//    JPanel keyPanel = new JPanel(new GridLayout(1, 1, 5, 5));
+//    JTextField keyField = new JTextField("Key");
+//    keyPanel.add(keyField);
+//    JTextField tagField = new JTextField("tag");
+//    JTextField idxField = new JTextField("index");
+//
+//    bumpPanel.add(keyPanel);
+//    bumpPanel.add(tagField);
+//    bumpPanel.add(idxField);
+//
+//    bumpFrame.add(bumpPanel);
+//    bumpFrame.setSize(300, 300);
+//    bumpFrame.setLayout(null);
+//    bumpFrame.setVisible(true);
+
+
+
+
+    final JFrame bumpFrame = new JFrame("Accept Bump");
+    Container c = getContentPane();
+    JPanel bumpPanel = new JPanel(new BorderLayout());
+
+    JPanel keyPanel = new JPanel(new GridLayout(1, 1, 5, 5));
+    JTextField keyField = new JTextField("Key");
+    keyPanel.add(keyField);
+    bumpPanel.add(keyPanel);
+
+//    outerPanel.add(getInputPanel(), BorderLayout.CENTER);
+//    outerPanel.add(getTextPanel(), BorderLayout.NORTH);
+//    c.setLayout(new BorderLayout());
+//    c.add(outerPanel, BorderLayout.CENTER);
+//    c.add(getUsersPanel(), BorderLayout.WEST);
+
+    bumpFrame.add(c);
+    bumpFrame.pack();
+    bumpFrame.setLocation(150, 150);
+
+    bumpFrame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+    bumpFrame.setVisible(true);
+
+
+
+
+
+//    final JFrame f= new JFrame("PopupMenu Example");
+//    final JPopupMenu popupmenu = new JPopupMenu("Edit");
+//    JMenuItem cut = new JMenuItem("Cut");
+//    JMenuItem copy = new JMenuItem("Copy");
+//    JMenuItem paste = new JMenuItem("Paste");
+//    popupmenu.add(cut); popupmenu.add(copy); popupmenu.add(paste);
+//    f.addMouseListener(new MouseAdapter() {
+//      public void mouseClicked(MouseEvent e) {
+//        popupmenu.show(f , e.getX(), e.getY());
+//      }
+//    });
+//    f.add(popupmenu);
+//    f.setSize(300,300);
+//    f.setLayout(null);
+//    f.setVisible(true);
   }
 
 //  private void sendMessage(String chatMessage) throws RemoteException {
