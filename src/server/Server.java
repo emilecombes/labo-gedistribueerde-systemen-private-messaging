@@ -5,6 +5,7 @@ import common.ServerIF;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import java.nio.ByteBuffer;
 import java.security.*;
 import java.util.*;
 
@@ -79,21 +80,23 @@ public class Server extends UnicastRemoteObject implements ServerIF {
   }
 
   @Override
-  public byte[] getMessage(int idx, byte[] tag) throws RemoteException {
+  public byte[] getMessage(byte[] encryptedIdx, byte[] encryptedTag) throws RemoteException {
     //Decrypt message from client
-    //TODO
-//    byte[] decrypted = decrypt(encryptedRequest);
-//    byte[] decrypted = encryptedRequest;
-//    assert decrypted != null;
+    byte[] decryptedIdx = decrypt(encryptedIdx);
+    assert decryptedIdx != null;
+    ByteBuffer buff = ByteBuffer.wrap(decryptedIdx);
+    int idx = buff.getInt();
+    byte[] decryptedTag = decrypt(encryptedTag);
+    assert decryptedTag != null;
 
     System.out.println("--------------GetMessage--------------");
     System.out.println("Id aangekomen bij server: " + idx);
-    System.out.println("Tag aangekomen bij server: " + new String(tag));
+    System.out.println("Tag aangekomen bij server: " + new String(decryptedTag));
 
     byte[] hashedTag = null;
     try {
       MessageDigest hash = MessageDigest.getInstance("SHA-512");
-      hash.update(tag);
+      hash.update(decryptedTag);
       hashedTag = hash.digest();
       System.out.println("Tag na hashen: " + new String(hashedTag));
       byte[] message = bulletinBoard.get(idx).get(hashedTag);
@@ -111,16 +114,26 @@ public class Server extends UnicastRemoteObject implements ServerIF {
   }
 
   @Override
-  public void writeToBB(int idx, byte[] encryptedValue, byte[] encryptedTag) throws RemoteException {
+  public void writeToBB(byte[] encryptedIdx, byte[] encryptedValue, byte[] encryptedTag) throws RemoteException {
     System.out.println("--------------writeToBB--------------");
+
+    //Decrypt from client
+    byte[] decryptedIdx = decrypt(encryptedIdx);
+    assert decryptedIdx != null;
+    ByteBuffer buff = ByteBuffer.wrap(decryptedIdx);
+    int idx = buff.getInt();
+    byte[] decrypted = decrypt(encryptedValue);
+//    byte[] decrypted = encryptedValue;
+    byte[] tag = decrypt(encryptedTag);
+//    byte[] tag = encryptedTag;
+    assert tag != null;
+    assert decrypted != null;
+
     System.out.println("Id aangekomen bij server: " + idx);
-    System.out.println("message aangekomen bij server: " + new String(encryptedValue));
-    System.out.println("tag aangekomen bij server: " + new String(encryptedTag));
-    //TODO
-//    byte[] decrypted = decrypt(encryptedValue);
-    byte[] decrypted = encryptedValue;
-//    byte[] tag = decrypt(encryptedTag);
-    byte[] tag = encryptedTag;
+    System.out.println("message aangekomen bij server: " + new String(decrypted));
+    System.out.println("tag aangekomen bij server: " + new String(tag));
+
+
 //    System.out.println("Decrypted u: " + new String(decrypted) + " tag: " + new String(tag));
     bulletinBoard.get(idx).put(tag, decrypted);
     System.out.println("--------------EXIT writeToBB--------------");

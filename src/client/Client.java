@@ -140,15 +140,18 @@ public class Client extends UnicastRemoteObject implements Remote {
         System.out.println();
 
         //Assymetrische encryptie naar server
-        //TODO
-//        byte[] encrypted = encryptToServer(encryptedValue);
-        byte[] encrypted = encryptedValue;
+        ByteBuffer buff = ByteBuffer.allocate(Integer.BYTES);
+        buff.putInt(sendMap.get(recipient).getIdx());
+        byte[] encryptedIdx = encryptToServer(buff.array());
+
+        byte[] encrypted = encryptToServer(encryptedValue);
+//        byte[] encrypted = encryptedValue;
 
         MessageDigest hash = MessageDigest.getInstance("SHA-512");
         hash.update(sendMap.get(recipient).getTag());
         byte[] hashTag = hash.digest();
-//        byte[] encryptedTag = encryptToServer(hashTag);
-        byte[] encryptedTag = hashTag;
+        byte[] encryptedTag = encryptToServer(hashTag);
+//        byte[] encryptedTag = hashTag;
 
         System.out.println("encryptedTag: " + new String(encryptedTag));
         System.out.println();
@@ -160,7 +163,7 @@ public class Client extends UnicastRemoteObject implements Remote {
         System.out.println(" encryptedTag: "+new String(encryptedTag));
         System.out.println();
         // Write to bulletin board
-        serverIF.writeToBB(sendMap.get(recipient).getIdx(),
+        serverIF.writeToBB(encryptedIdx,
             encrypted,
             encryptedTag
         );
@@ -190,26 +193,16 @@ public class Client extends UnicastRemoteObject implements Remote {
     System.out.println("sender: " + sender);
 
     if (receiveMap.containsKey(sender)) {
-      // Create request message
-//      byte[] separator = "|".getBytes();
-//      byte[] buffer =
-//          new byte[Integer.BYTES + separator.length + receiveMap.get(sender).getTag().length];
-//      ByteBuffer buff = ByteBuffer.wrap(buffer);
-////      buff.putInt(receiveMap.get(sender).getIdx());
-////      buff.put(separator);
-//      buff.put(receiveMap.get(sender).getTag());
-//      byte[] request = buff.array();
+      // Create request message + encryption
+      ByteBuffer buff = ByteBuffer.allocate(Integer.BYTES);
+      buff.putInt(receiveMap.get(sender).getIdx());
+      byte[] encryptedIdx = encryptToServer(buff.array());
 
-//      System.out.println(new String(request));
-
-
-      // Assymetric encryption to server
-      //TODO
-//      byte[] encryptedRequest = encryptToServer(request);
-//      byte[] encryptedRequest = request;
+      byte[] encryptedTag = encryptToServer(receiveMap.get(sender).getTag());
 
       // Retrieve message from server
-      byte[] encryptedMessage = serverIF.getMessage(receiveMap.get(sender).getIdx(), receiveMap.get(sender).getTag());
+//      byte[] encryptedMessage = serverIF.getMessage(receiveMap.get(sender).getIdx(), receiveMap.get(sender).getTag());
+      byte[] encryptedMessage = serverIF.getMessage(encryptedIdx, encryptedTag);
       System.out.println("EncryptedMessage from server: " + new String(encryptedMessage));
       byte[] decryptedMessage = new byte[0];
       try {
@@ -253,7 +246,7 @@ public class Client extends UnicastRemoteObject implements Remote {
       userMap.put(username, id);
 
       FileOutputStream fileOut =
-              new FileOutputStream("/tmp/commDet.ser");
+              new FileOutputStream("tmp/commDet.ser");
       ObjectOutputStream out = new ObjectOutputStream(fileOut);
       out.writeObject(commDet.setUsername(userName));
       out.close();
@@ -266,7 +259,7 @@ public class Client extends UnicastRemoteObject implements Remote {
   public String receiveBumpJson(int id){
     CommunicationDetails commDet;
     try {
-      FileInputStream fileIn = new FileInputStream("/tmp/commDet.ser");
+      FileInputStream fileIn = new FileInputStream("tmp/commDet.ser");
       ObjectInputStream in = new ObjectInputStream(fileIn);
       commDet = (CommunicationDetails) in.readObject();
       in.close();
