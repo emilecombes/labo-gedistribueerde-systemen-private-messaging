@@ -74,12 +74,29 @@ public class Client extends UnicastRemoteObject implements Remote {
     System.out.println("Client is listening...");
   }
 
+  public static void main(String[] args) throws NoSuchAlgorithmException, RemoteException {
+    Client c = new Client(new ClientUI(), "Bob");
+    c.doe();
+  }
+
+  public void doe() throws NoSuchAlgorithmException {
+    int idx = random.nextInt(serverSize);
+    byte[] tag = new byte[tagSize];
+    random.nextBytes(tag);
+    KeyGenerator kg = KeyGenerator.getInstance("AES");
+    SecretKey sk = kg.generateKey();
+    CommunicationDetails commDet = new CommunicationDetails(idx, tag, sk, "Bob");
+    sendMap.put(1, commDet);
+    generateNewSendKey(1);
+  }
+
   private SecretKey generateNewSendKey(int id){
     try {
       SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
       byte[] salt = "salt".getBytes();
-      KeySpec spec = new PBEKeySpec(Base64.getEncoder().encodeToString(sendMap.get(id).getKey().getEncoded()).toCharArray());
-      return new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
+      KeySpec spec = new PBEKeySpec(Base64.getEncoder().encodeToString(sendMap.get(id).getKey().getEncoded()).toCharArray(), salt, 1000, 16);
+      SecretKey s = new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
+      return s;
     } catch(Exception e) {
       e.printStackTrace();
     }
@@ -90,7 +107,7 @@ public class Client extends UnicastRemoteObject implements Remote {
     try {
       SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
       byte[] salt = "salt".getBytes();
-      KeySpec spec = new PBEKeySpec(Base64.getEncoder().encodeToString(receiveMap.get(id).getKey().getEncoded()).toCharArray());
+      KeySpec spec = new PBEKeySpec(Base64.getEncoder().encodeToString(receiveMap.get(id).getKey().getEncoded()).toCharArray(), salt, 1000, 16);
       return new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
     } catch(Exception e) {
       e.printStackTrace();
@@ -149,8 +166,8 @@ public class Client extends UnicastRemoteObject implements Remote {
         );
 
         //Update eigen send waarden
-//        SecretKey newKey = generateNewSendKey(recipient);
-        SecretKey newKey = key;
+        SecretKey newKey = generateNewSendKey(recipient);
+//        SecretKey newKey = key;
         assert newKey != null;
         sendMap.get(recipient).setIdx(nextIdx).setTag(nextTag).setKey(newKey);
         System.out.println("idx: "+sendMap.get(recipient).getIdx()+" tag: "+new String(sendMap.get(recipient).getTag())+" key: "+sendMap.get(recipient).getKey().toString());
@@ -208,8 +225,8 @@ public class Client extends UnicastRemoteObject implements Remote {
         System.out.println("message[0]: " + message[0] + "message[1]: " + message[1] + "message[2]: " + message[2]);
         int newIdx = Integer.parseInt(message[0]);
         byte[] newTag = message[2].getBytes();
-//        SecretKey newKey = generateNewReceiveKey(sender);
-        SecretKey newKey = receiveMap.get(sender).getKey();
+        SecretKey newKey = generateNewReceiveKey(sender);
+//        SecretKey newKey = receiveMap.get(sender).getKey();
         assert newKey != null;
         receiveMap.get(sender).setIdx(newIdx).setTag(newTag).setKey(newKey);
 
