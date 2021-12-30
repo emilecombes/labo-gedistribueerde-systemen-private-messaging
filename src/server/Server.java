@@ -1,6 +1,5 @@
 package server;
 
-import common.ClientIF;
 import common.ServerIF;
 
 import javax.crypto.BadPaddingException;

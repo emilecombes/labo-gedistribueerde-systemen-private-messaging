@@ -1,6 +1,5 @@
 package client;
 
-import common.ClientIF;
 import common.ServerIF;
 import models.CommunicationDetails;
 
@@ -8,7 +7,6 @@ import javax.crypto.*;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
-import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
@@ -19,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-public class Client extends UnicastRemoteObject implements ClientIF {
+public class Client extends UnicastRemoteObject implements Remote {
   ClientUI chatUI;
   private String hostName = "localhost";
   private String serviceName = "chatService";
