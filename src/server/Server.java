@@ -16,21 +16,23 @@ import java.rmi.RemoteException;
 
 
 public class Server extends UnicastRemoteObject implements ServerIF {
-  private Vector<Chatter> chatters;
   private ArrayList<LinkedHashMap<byte[], byte[]>> bulletinBoard;
   private int bulletinBoardSize = 10;
   private KeyPair keyPair;
   private Cipher serverCipher;
+  private int clientNumber;
 
   // Constructor
   public Server() throws RemoteException {
     super();
-    chatters = new Vector<>(10, 1);
+    clientNumber = 0;
+
     bulletinBoard = new ArrayList<>(bulletinBoardSize);
     for(int i = 0; i < bulletinBoardSize; i++){
       bulletinBoard.add(new LinkedHashMap<>());
     }
-    //Initialiseren keypair server
+
+    // Init server keypair
     try{
       KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
       keyPairGenerator.initialize(2048);
@@ -71,6 +73,11 @@ public class Server extends UnicastRemoteObject implements ServerIF {
 
 
   // Remote Methods
+  @Override
+  public int getUserId(){
+    return clientNumber++;
+  }
+
   @Override
   public byte[] getMessage(int idx, byte[] tag) throws RemoteException {
     //Decrypt message from client
@@ -122,9 +129,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
   private byte[] decrypt(byte[] encrypted){
     try {
       return serverCipher.doFinal(encrypted);
-    } catch (IllegalBlockSizeException e) {
-      e.printStackTrace();
-    } catch (BadPaddingException e) {
+    } catch (IllegalBlockSizeException | BadPaddingException e) {
       e.printStackTrace();
     }
     return null;
@@ -134,84 +139,4 @@ public class Server extends UnicastRemoteObject implements ServerIF {
   public PublicKey getPublicKey() throws RemoteException {
     return keyPair.getPublic();
   }
-
-//  public void updateChat(String name, byte[] post) throws RemoteException {
-//    sendToAll(name + ": " + new String(post) + "\n");
-//  }
-
-//  public void updateUserList() {
-//    String[] currentUsers = getUserList();
-//    for(Chatter c : chatters){
-//      try {
-//        c.getClient().updateUserList(currentUsers);
-//      } catch (RemoteException e){
-//        e.printStackTrace();
-//      }
-//    }
-//  }
-
-  public String[] getUserList(){
-    String[] allUsers = new String[chatters.size()];
-    for(int i = 0; i < allUsers.length; i++) {
-      allUsers[i] = chatters.elementAt(i).getName();
-    }
-    return allUsers;
-  }
-
-//  public void sendToAll(String message) {
-//    for(Chatter c : chatters){
-//      try {
-//        c.getClient().messageFromServer(message);
-//      } catch (RemoteException e){
-//        e.printStackTrace();
-//      }
-//    }
-//  }
-
-//  @Override
-//  public void registerListener(String user, String host, String service) throws RemoteException{
-//    System.out.println(user + " has joined.");
-//    System.out.println("hostname: " + host);
-//    System.out.println("RMI service: " + service);
-//    registerChatter(user, host, service);
-//  }
-
-//  private void registerChatter(String user, String host, String service) {
-//    try{
-//      ClientIF newClient = (ClientIF) Naming.lookup(
-//          "rmi://" + host + "/" + service
-//      );
-//      chatters.addElement(new Chatter(user, newClient));
-//      newClient.messageFromServer("[Server]: " + "Welcome to the chat " + user + ".\n");
-//      updateUserList();
-//    } catch (Exception e) {
-//      e.printStackTrace();
-//    }
-//  }
-
-//  @Override
-//  public void leaveChat(String user) throws RemoteException {
-//    Chatter leaver = getChatter(user);
-//    System.out.println(leaver.getName() + " left the chat.");
-//    chatters.remove(getChatter(user));
-//    updateUserList();
-//  }
-
-  public Chatter getChatter(String user) {
-    for (Chatter c : chatters)
-      if (c.getName().equals(user))
-        return c;
-    return null;
-  }
-
-//  @Override
-//  public void sendPM(int[] group, String message) throws RemoteException {
-//    Chatter privateConversation;
-//    for(int i : group){
-//      privateConversation = chatters.elementAt(i);
-//      privateConversation.getClient().messageFromServer(message);
-//    }
-//  }
-
-
 }
