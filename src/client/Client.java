@@ -4,76 +4,56 @@ import common.ServerIF;
 import models.CommunicationDetails;
 
 import javax.crypto.*;
-import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.rmi.*;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.KeySpec;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
 public class Client extends UnicastRemoteObject implements Remote {
+  private final String userName;
+  private int userId;
+  private final String clientServiceName;
   ClientUI chatUI;
-  private String hostName = "localhost";
-  private String serviceName = "chatService";
-  private String userName;
-  private String clientServiceName;
 
-  private String ownPrefix = "[Sent by you]: ";
-
-  private int serverSize = 10;
-  private int tagSize = 100;
-  private Random random = new Random();
-
-  private int id;
-  private static int nummer = 0;
-
-  //Group:
-  private int groupIdx;
-  private int groupTag;
-  private Cipher groupCipher;
-  //Sleutels voor groepschat
-  private SecretKey groupSendSecretKey;
-  private SecretKey groupReceiveSecretKey;
-
-  //PM:
-  private Map<Integer, CommunicationDetails> sendMap = new HashMap<>();
-  private Map<Integer, CommunicationDetails> receiveMap = new HashMap<>();
-
+  private final int serverSize = 10;
+  private final int tagSize = 100;
+  private final Random random = new Random();
   Cipher serverCipher;
+
+  // Communication Details
+  private final Map<Integer, CommunicationDetails> sendMap = new HashMap<>();
+  private final Map<Integer, CommunicationDetails> receiveMap = new HashMap<>();
 
   public ServerIF serverIF;
 
-  public Client(ClientUI chat, String userName) throws RemoteException {
+  public Client(ClientUI chat, String name) throws RemoteException {
     super();
     chatUI = chat;
-    this.userName = userName;
+    userName = name;
     clientServiceName = "ClientListenService_" + userName;
-    id = nummer;
-    nummer++;
+  }
+
+  public int getId() {
+    return userId;
   }
 
   public void start() throws RemoteException {
     try {
+      String hostName = "localhost";
       Naming.rebind("rmi://" + hostName + "/" + clientServiceName, this);
+      String serviceName = "chatService";
       serverIF = (ServerIF) Naming.lookup("rmi://" + hostName + "/" + serviceName);
-
-      // Initialise symmetric key for the group conversation
-      KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-      groupSendSecretKey = keyGenerator.generateKey();
-      groupCipher = Cipher.getInstance("AES");
-
-      // Register the new client
-//      serverIF.registerListener(userName, hostName, clientServiceName);
 
       // Get Cipher to encrypt traffic to server
       serverCipher = Cipher.getInstance("RSA");
       serverCipher.init(Cipher.ENCRYPT_MODE, serverIF.getPublicKey());
+
+      userId = serverIF.getUserId();
 
     } catch (ConnectException e) {
       System.err.println("Connection problem: " + e);
@@ -85,37 +65,13 @@ public class Client extends UnicastRemoteObject implements Remote {
     System.out.println("Client is listening...");
   }
 
-  private SecretKey generateNewSendKey(int id){
-    try {
-      SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-      byte[] salt = "salt".getBytes();
-      KeySpec spec = new PBEKeySpec(sendMap.get(id).getKey().toString().toCharArray(), salt, 1000);
-      return new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
-    } catch(Exception e) {
-      e.printStackTrace();
-    }
-    return null;
-  }
-
-  private SecretKey generateNewReceiveKey(int id){
-    try {
-      SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-      byte[] salt = "salt".getBytes();
-      KeySpec spec = new PBEKeySpec(receiveMap.get(id).getKey().toString().toCharArray(), salt, 1000);
-      return new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
-    } catch(Exception e) {
-      e.printStackTrace();
-    }
-    return null;
-  }
-
   public void sendPM(int recipient, String message) throws RemoteException {
     if(sendMap.containsKey(recipient)) {
       String prefix = "[PM from " + userName + "]: ";
       int nextIdx = random.nextInt(serverSize);
       byte[] nextTag = new byte[tagSize];
       random.nextBytes(nextTag);
-      String value = prefix + message + '|' + nextIdx + '|' + nextTag;
+      String value = prefix + message + '|' + nextIdx + '|' + new String(nextTag);
 
       try {
         // E2EE
@@ -144,6 +100,7 @@ public class Client extends UnicastRemoteObject implements Remote {
         sendMap.get(recipient).setIdx(nextIdx).setTag(nextTag).setKey(newKey);
 
         //Weergeven
+        String ownPrefix = "[Sent by you]: ";
         System.out.println(ownPrefix + message);
         chatUI.textArea.append(ownPrefix + message);
         chatUI.textArea.setCaretPosition(chatUI.textArea.getDocument().getLength());
@@ -199,22 +156,6 @@ public class Client extends UnicastRemoteObject implements Remote {
     }
   }
 
-  public String bumpUser(int id) {
-    try {
-      int idx = random.nextInt(serverSize);
-      byte[] tag = new byte[tagSize];
-      random.nextBytes(tag);
-      KeyGenerator kg = KeyGenerator.getInstance("AES");
-      SecretKey sk = kg.generateKey();
-      String username = "nog invullen";
-      sendMap.put(id, new CommunicationDetails(idx, tag, sk, username));
-      return sendMap.get(id).getBumpRequest();
-    } catch (NoSuchAlgorithmException e) {
-      e.printStackTrace();
-    }
-    return "Bump failed.";
-  }
-
   public void bumpJson(int id, String username) {
     try {
       int idx = random.nextInt(serverSize);
@@ -226,7 +167,7 @@ public class Client extends UnicastRemoteObject implements Remote {
       sendMap.put(id, commDet);
 
       FileOutputStream fileOut =
-              new FileOutputStream("/commDet.ser");
+              new FileOutputStream("/tmp/commDet.ser");
       ObjectOutputStream out = new ObjectOutputStream(fileOut);
       out.writeObject(commDet.setUsername(userName));
       out.close();
@@ -237,9 +178,9 @@ public class Client extends UnicastRemoteObject implements Remote {
   }
 
   public String receiveBumpJson(int id){
-    CommunicationDetails commDet = null;
+    CommunicationDetails commDet;
     try {
-      FileInputStream fileIn = new FileInputStream("/commDet.ser");
+      FileInputStream fileIn = new FileInputStream("/tmp/commDet.ser");
       ObjectInputStream in = new ObjectInputStream(fileIn);
       commDet = (CommunicationDetails) in.readObject();
       in.close();
@@ -252,30 +193,6 @@ public class Client extends UnicastRemoteObject implements Remote {
     return commDet.getUsername();
   }
 
-//  //Versturen van bump: genereren van values, opslaan in eigen sendMap en doorgeven naar acceptBump
-//  public void sendBump(Client acceptor) {
-//    int idx = random.nextInt(serverSize);
-//    byte[] tag = new byte[tagSize];
-//    random.nextBytes(tag);
-//    SecretKey secretKey = null;
-//    try {
-//      KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-//      secretKey = keyGenerator.generateKey();
-//    } catch (Exception e) {
-//      e.printStackTrace();
-//    }
-//    if (secretKey != null) {
-//      CommunicationDetails commDet = new CommunicationDetails(idx, tag, secretKey);
-//      sendMap.put(acceptor.id, commDet);
-//      acceptor.acceptBump(commDet, this);
-//    }
-//  }
-
-  //Accepteren van bump: values opslaan in receiveMap
-  public void acceptBump(CommunicationDetails commDet, Client sender) {
-    receiveMap.put(sender.id, commDet);
-  }
-
   private byte[] encryptToServer(byte[] toEncrypt) {
     try {
       return serverCipher.doFinal(toEncrypt);
@@ -285,81 +202,5 @@ public class Client extends UnicastRemoteObject implements Remote {
     return null;
   }
 
-//  public void sendPM(int[] privateList, String name, String message) throws RemoteException {
-//    //TODO: alles
-//    String privateMessage = "[PM from " + name + "]: " + message + "\n";
-//    serverIF.sendPM(privateList, privateMessage);
-//  }
-
-//  @Override
-//  public void messageFromServer(String message) throws RemoteException {
-//    if(message.length() > 0) {
-//      //Todo: Decrypteren en splitsen
-//      generateNewReceiveGroupKey();
-//      String[] result = message.split("\\|");
-//      String decryptedMesage = "Error";
-//      try {
-//        groupCipher.init(Cipher.DECRYPT_MODE, groupReceiveSecretKey);
-//        byte[] decryptedByte = groupCipher.doFinal(result[1].getBytes());
-//        String[] decrypted = new String(decryptedByte).split("\\|");
-//        groupIdx = Integer.parseInt(decrypted[1]);
-//        groupTag = Integer.parseInt(decrypted[2]);
-//        decryptedMesage = decrypted[0];
-//      } catch(Exception e) {
-//        e.printStackTrace();
-//      }
-//      System.out.println(decryptedMesage);
-//      chatUI.textArea.append(message);
-//      chatUI.textArea.setCaretPosition(chatUI.textArea.getDocument().getLength());
-//    }
-//  }
-
-//  @Override
-//  public void updateUserList(String[] currentUsers) throws RemoteException {
-//    //TODO: sleutel genereren voor elke nieuwe user
-//    if (currentUsers.length < 2) {
-//      chatUI.privateMsgButton.setEnabled(false);
-//    }
-//    chatUI.userPanel.remove(chatUI.clientPanel);
-//    chatUI.setClientPanel(currentUsers);
-//    chatUI.clientPanel.repaint();
-//    chatUI.clientPanel.revalidate();
-//  }
-
-//  public void sendGroupMessage(String chatMessage, String name) throws RemoteException {
-//    //Todo: update bound to reflect server capacity
-//    int idxNext = random.nextInt(serverSize);
-//    //Todo: tag String?
-//    int tagNext = 0;
-//    String u = chatMessage + "|" + idxNext + "|" + tagNext;
-//    byte[] toEncrypt = u.getBytes();
-//
-//    try {
-//      groupCipher.init(Cipher.ENCRYPT_MODE, groupSendSecretKey);
-//      byte[] encrypted = groupCipher.doFinal(toEncrypt);
-//      byte[] seperator = "|".getBytes();
-//
-//      byte[] totaal = new byte[Integer.BYTES*2 + encrypted.length + seperator.length*2];
-//      ByteBuffer buff = ByteBuffer.wrap(totaal);
-//      buff.putInt(groupIdx);
-//      buff.put(seperator);
-//      buff.put(encrypted);
-//      buff.put(seperator);
-//      buff.putInt(groupTag);
-//      byte[] combined = buff.array();
-//      serverIF.updateChat(name, combined);
-//
-//    } catch(Exception e) {
-//      e.printStackTrace();
-//    }
-//    generateNewSendGroupKey();
-//    groupIdx = idxNext;
-//    groupTag = tagNext;
-//    //Todo: sleutel veranderen
-//  }
-
-  public int getId() {
-    return id;
-  }
 
 }
