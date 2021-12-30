@@ -16,7 +16,7 @@ public interface ServerIF extends Remote {
 
   PublicKey getPublicKey() throws RemoteException;
 
-  byte[] getMessage(byte[] encryptedRequest) throws RemoteException;
+  byte[] getMessage(int idx, byte[] encryptedRequest) throws RemoteException;
 
   void writeToBB(int idx, byte[] value, byte[] tag) throws RemoteException;
 }
