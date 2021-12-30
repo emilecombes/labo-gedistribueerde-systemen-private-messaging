@@ -31,6 +31,7 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   private int serverSize = 10;
   private int tagSize = 100;
   private Random random = new Random();
+
   private int id;
   private static int nummer = 0;
 
@@ -89,7 +90,8 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   private SecretKey generateNewSendKey(int id){
     try {
       SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-      KeySpec spec = new PBEKeySpec(sendMap.get(id).getKey().toString().toCharArray());
+      byte[] salt = "salt".getBytes();
+      KeySpec spec = new PBEKeySpec(sendMap.get(id).getKey().toString().toCharArray(), salt, 1000);
       return new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
     } catch(Exception e) {
       e.printStackTrace();
@@ -100,7 +102,8 @@ public class Client extends UnicastRemoteObject implements ClientIF {
   private SecretKey generateNewReceiveKey(int id){
     try {
       SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-      KeySpec spec = new PBEKeySpec(receiveMap.get(id).getKey().toString().toCharArray());
+      byte[] salt = "salt".getBytes();
+      KeySpec spec = new PBEKeySpec(receiveMap.get(id).getKey().toString().toCharArray(), salt, 1000);
       return new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
     } catch(Exception e) {
       e.printStackTrace();
@@ -137,9 +140,10 @@ public class Client extends UnicastRemoteObject implements ClientIF {
         );
 
         //Update eigen send waarden
-        SecretKey newKey = generateNewSendKey(recipient);
+//        SecretKey newKey = generateNewSendKey(recipient);
+        SecretKey newKey = key;
         assert newKey != null;
-        receiveMap.put(recipient, new CommunicationDetails(nextIdx, nextTag, newKey));
+        sendMap.get(recipient).setIdx(nextIdx).setTag(nextTag).setKey(newKey);
 
         //Weergeven
         System.out.println(ownPrefix + message);
@@ -182,9 +186,10 @@ public class Client extends UnicastRemoteObject implements ClientIF {
 
         int newIdx = Integer.parseInt(message[0]);
         byte[] newTag = message[2].getBytes();
-        SecretKey newKey = generateNewReceiveKey(sender);
+//        SecretKey newKey = generateNewReceiveKey(sender);
+        SecretKey newKey = receiveMap.get(sender).getKey();
         assert newKey != null;
-        receiveMap.put(sender, new CommunicationDetails(newIdx, newTag, newKey));
+        receiveMap.get(sender).setIdx(newIdx).setTag(newTag).setKey(newKey);
 
         System.out.println(message[1]);
         chatUI.textArea.append(message[1]);
@@ -203,7 +208,8 @@ public class Client extends UnicastRemoteObject implements ClientIF {
       random.nextBytes(tag);
       KeyGenerator kg = KeyGenerator.getInstance("AES");
       SecretKey sk = kg.generateKey();
-      sendMap.put(id, new CommunicationDetails(idx, tag, sk));
+      String username = "nog invullen";
+      sendMap.put(id, new CommunicationDetails(idx, tag, sk, username));
       return sendMap.get(id).getBumpRequest();
     } catch (NoSuchAlgorithmException e) {
       e.printStackTrace();
@@ -211,20 +217,20 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     return "Bump failed.";
   }
 
-  public void bumpJson(int id) {
+  public void bumpJson(int id, String username) {
     try {
       int idx = random.nextInt(serverSize);
       byte[] tag = new byte[tagSize];
       random.nextBytes(tag);
       KeyGenerator kg = KeyGenerator.getInstance("AES");
       SecretKey sk = kg.generateKey();
-      CommunicationDetails commDet = new CommunicationDetails(idx, tag, sk);
+      CommunicationDetails commDet = new CommunicationDetails(idx, tag, sk, username);
       sendMap.put(id, commDet);
 
       FileOutputStream fileOut =
-              new FileOutputStream("/tmp/commDet.ser");
+              new FileOutputStream("/commDet.ser");
       ObjectOutputStream out = new ObjectOutputStream(fileOut);
-      out.writeObject(commDet);
+      out.writeObject(commDet.setUsername(userName));
       out.close();
       fileOut.close();
     } catch (NoSuchAlgorithmException | IOException e) {
@@ -232,39 +238,40 @@ public class Client extends UnicastRemoteObject implements ClientIF {
     }
   }
 
-  public void receiveBumpJson(int id){
+  public String receiveBumpJson(int id){
     CommunicationDetails commDet = null;
     try {
-      FileInputStream fileIn = new FileInputStream("/tmp/commDet.ser");
+      FileInputStream fileIn = new FileInputStream("/commDet.ser");
       ObjectInputStream in = new ObjectInputStream(fileIn);
       commDet = (CommunicationDetails) in.readObject();
       in.close();
       fileIn.close();
     } catch (IOException | ClassNotFoundException i) {
       i.printStackTrace();
-      return;
+      return "";
     }
     receiveMap.put(id, commDet);
+    return commDet.getUsername();
   }
 
-  //Versturen van bump: genereren van values, opslaan in eigen sendMap en doorgeven naar acceptBump
-  public void sendBump(Client acceptor) {
-    int idx = random.nextInt(serverSize);
-    byte[] tag = new byte[tagSize];
-    random.nextBytes(tag);
-    SecretKey secretKey = null;
-    try {
-      KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-      secretKey = keyGenerator.generateKey();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    if (secretKey != null) {
-      CommunicationDetails commDet = new CommunicationDetails(idx, tag, secretKey);
-      sendMap.put(acceptor.id, commDet);
-      acceptor.acceptBump(commDet, this);
-    }
-  }
+//  //Versturen van bump: genereren van values, opslaan in eigen sendMap en doorgeven naar acceptBump
+//  public void sendBump(Client acceptor) {
+//    int idx = random.nextInt(serverSize);
+//    byte[] tag = new byte[tagSize];
+//    random.nextBytes(tag);
+//    SecretKey secretKey = null;
+//    try {
+//      KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+//      secretKey = keyGenerator.generateKey();
+//    } catch (Exception e) {
+//      e.printStackTrace();
+//    }
+//    if (secretKey != null) {
+//      CommunicationDetails commDet = new CommunicationDetails(idx, tag, secretKey);
+//      sendMap.put(acceptor.id, commDet);
+//      acceptor.acceptBump(commDet, this);
+//    }
+//  }
 
   //Accepteren van bump: values opslaan in receiveMap
   public void acceptBump(CommunicationDetails commDet, Client sender) {
@@ -352,5 +359,9 @@ public class Client extends UnicastRemoteObject implements ClientIF {
 //    groupTag = tagNext;
 //    //Todo: sleutel veranderen
 //  }
+
+  public int getId() {
+    return id;
+  }
 
 }

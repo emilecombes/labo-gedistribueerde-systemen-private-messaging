@@ -9,6 +9,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -25,10 +29,13 @@ public class ClientUI extends JFrame implements ActionListener {
   private JList<String> list;
   private DefaultListModel<String> listModel;
 
+  private Map<String, Integer> currentUsers = new HashMap<>();
+
   protected JTextArea textArea, userArea;
   protected JFrame frame;
-  protected JButton privateMsgButton, startButton, sendButton, requestBumpButton, acceptBumpButton;
+  protected JButton privateMsgButton, startButton, sendButton, requestBumpButton, acceptBumpButton, refreshButton;
   protected JPanel clientPanel, userPanel;
+  protected JLabel idLabel;
 
   public static void main(String[] args) {
     new ClientUI();
@@ -90,6 +97,10 @@ public class ClientUI extends JFrame implements ActionListener {
     JLabel userLabel = new JLabel(userStr, JLabel.CENTER);
     userPanel.add(userLabel, BorderLayout.NORTH);
 
+    String idStr = "";
+    idLabel = new JLabel(idStr, JLabel.CENTER);
+    userPanel.add(idLabel, BorderLayout.NORTH);
+
     String[] noClientsYet = {"No other users"};
     setClientPanel(noClientsYet);
 
@@ -113,7 +124,7 @@ public class ClientUI extends JFrame implements ActionListener {
 
     //Create the list and put it in a scroll pane.
     list = new JList<>(listModel);
-    list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+    list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     list.setVisibleRowCount(8);
     list.addListSelectionListener(new ListSelectionListener() {
       @Override
@@ -147,12 +158,16 @@ public class ClientUI extends JFrame implements ActionListener {
     acceptBumpButton.addActionListener(this);
 //    acceptBumpButton.setEnabled(false);
 
+    refreshButton = new JButton("Refresh");
+    refreshButton.addActionListener(this);
+
     JPanel buttonPanel = new JPanel(new GridLayout(4, 1));
     buttonPanel.add(privateMsgButton);
     buttonPanel.add(startButton);
     buttonPanel.add(sendButton);
     buttonPanel.add(requestBumpButton);
     buttonPanel.add(acceptBumpButton);
+    buttonPanel.add(refreshButton);
 
     return buttonPanel;
   }
@@ -168,16 +183,17 @@ public class ClientUI extends JFrame implements ActionListener {
           textField.setText("");
           textArea.append(name + " connecting to chat...\n");
           getConnected(name);
+          idLabel.setText("Your id: " + chatClient.getId());
           startButton.setEnabled(false);
           requestBumpButton.setEnabled(true);
-          textArea.append("Enter an id and press Bump to add a contact\n");
+          textArea.append("Enter the id,username and press Bump to add a contact\n");
         } else {
           JOptionPane.showMessageDialog(frame, "Enter your name to Start");
         }
       }
 
       // Send Message
-      if (e.getSource() == sendButton) {
+      else if (e.getSource() == sendButton) {
         message = textField.getText();
         textField.setText("");
 //        sendMessage(message);
@@ -185,39 +201,58 @@ public class ClientUI extends JFrame implements ActionListener {
       }
 
       // Send PM
-      if (e.getSource() == privateMsgButton) {
-        int[] privateList = list.getSelectedIndices();
-        for (int j : privateList)
-          System.out.println("selected index: " + j);
-
+      else if (e.getSource() == privateMsgButton) {
+        int selection = list.getSelectedIndex();
         message = textField.getText();
         textField.setText("");
-        sendPrivate(privateList);
+        sendPrivate(selection);
       }
 
       // Bump
-      if (e.getSource() == requestBumpButton) {
-        int receiver = list.getSelectedIndex();
-        chatClient.bumpJson(receiver);
-        String bumpRequest = chatClient.bumpUser(receiver);
-        JOptionPane.showMessageDialog(frame, "Show these private communication attributes to your" +
-            " new contact.\n" + bumpRequest);
+      else if (e.getSource() == requestBumpButton) {
+//        int receiver = list.getSelectedIndex();
+        String[] input = textField.getText().split(",");
+        int receiver = Integer.parseInt(input[0]);
+        String username = input[1];
+        chatClient.bumpJson(receiver, username);
+        currentUsers.put(username, receiver);
+        textArea.setText("Wait for the other user to accept the bump by typing your id and pressing accept bump \n");
+        updateUserList();
+        privateMsgButton.setEnabled(true);
+//        String bumpRequest = chatClient.bumpUser(receiver);
+//        JOptionPane.showMessageDialog(frame, "Show these private communication attributes to your" + " new contact.\n" + bumpRequest);
       }
 
       // Accept Bump
-      if (e.getSource() == acceptBumpButton) {
+      else if (e.getSource() == acceptBumpButton) {
         int bumpee = Integer.parseInt(textField.getText());
-        chatClient.bumpJson(bumpee);
-        String bumpRequest = chatClient.bumpUser(bumpee);
-        JOptionPane.showMessageDialog(frame, "Show these private communication attributes to your" +
-                " new contact.\n" + bumpRequest);
-        showBumpPane();
+        String username = chatClient.receiveBumpJson(bumpee);
+        chatClient.bumpJson(bumpee, username);
+        currentUsers.put(username, bumpee);
+        textArea.setText("Bump from " + username + " accepted, wait for him to accept your bump \n");
+        updateUserList();
+        privateMsgButton.setEnabled(true);
+//        String bumpRequest = chatClient.bumpUser(bumpee);
+//        JOptionPane.showMessageDialog(frame, "Show these private communication attributes to your" + " new contact.\n" + bumpRequest);
+//        showBumpPane();
+      }
+
+      else if (e.getSource() == refreshButton) {
+        int selection = list.getSelectedIndex();
+       getMessage(selection);
       }
 
     } catch (RemoteException remoteExc) {
       remoteExc.printStackTrace();
     }
 
+  }
+
+  private void updateUserList() {
+    userPanel.remove(clientPanel);
+    setClientPanel(currentUsers.keySet().toArray(new String[0]));
+    clientPanel.repaint();
+    clientPanel.revalidate();
   }
 
   private void showBumpPane(){
@@ -287,8 +322,12 @@ public class ClientUI extends JFrame implements ActionListener {
 //    chatClient.sendGroupMessage(chatMessage, name);
 //  }
 //
-  private void sendPrivate(int[] privateList) throws RemoteException {
-    chatClient.sendPM(privateList[0], message);
+  private void sendPrivate(int receiver) throws RemoteException {
+    chatClient.sendPM(receiver, message);
+  }
+
+  private void getMessage(int sender) throws RemoteException {
+    chatClient.getPM(sender);
   }
 
   private void getConnected(String userName) throws RemoteException {
