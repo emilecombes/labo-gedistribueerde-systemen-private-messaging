@@ -79,36 +79,51 @@ public class Server extends UnicastRemoteObject implements ServerIF {
   }
 
   @Override
-  public byte[] getMessage(byte[] encryptedRequest) throws RemoteException {
+  public byte[] getMessage(int idx, byte[] tag) throws RemoteException {
     //Decrypt message from client
-    byte[] decrypted = decrypt(encryptedRequest);
+    //TODO
+//    byte[] decrypted = decrypt(encryptedRequest);
 //    byte[] decrypted = encryptedRequest;
-    assert decrypted != null;
-    String[] request = new String(decrypted).split("\\|");
-    System.out.println("(1): " + request[0] + "(2): " + request[1]);
-    int idx = Integer.parseInt(request[0]);
-    String tag = request[1];
+//    assert decrypted != null;
+
+    System.out.println("--------------GetMessage--------------");
+    System.out.println("Id aangekomen bij server: " + idx);
+    System.out.println("Tag aangekomen bij server: " + new String(tag));
+
     byte[] hashedTag = null;
     try {
       MessageDigest hash = MessageDigest.getInstance("SHA-512");
-      hash.update(tag.getBytes());
+      hash.update(tag);
       hashedTag = hash.digest();
-      String[] message = new String(bulletinBoard.get(idx).get(hashedTag)).split("\\|");
-      //TODO: return is niet gencrypteerd tussen server en client, wel door symm key
-      if(message.length>0){
+      System.out.println("Tag na hashen: " + new String(hashedTag));
+      byte[] message = bulletinBoard.get(idx).get(hashedTag);
+      if(message != null){
+        System.out.println("Opgehaald bericht: " + new String(message));
         bulletinBoard.get(idx).remove(hashedTag);
-        return message[1].getBytes();
+        System.out.println("--------------EXIT GetMessage--------------");
+        return message;
       }
     } catch(Exception e) {
       e.printStackTrace();
     }
+    System.out.println("--------------EXIT GetMessage--------------");
     return new byte[0];
   }
 
   @Override
-  public void writeToBB(int idx, byte[] value, byte[] tag) throws RemoteException {
-    // TODO: RSA
-    bulletinBoard.get(idx).put(tag, value);
+  public void writeToBB(int idx, byte[] encryptedValue, byte[] encryptedTag) throws RemoteException {
+    System.out.println("--------------writeToBB--------------");
+    System.out.println("Id aangekomen bij server: " + idx);
+    System.out.println("message aangekomen bij server: " + new String(encryptedValue));
+    System.out.println("tag aangekomen bij server: " + new String(encryptedTag));
+    //TODO
+//    byte[] decrypted = decrypt(encryptedValue);
+    byte[] decrypted = encryptedValue;
+//    byte[] tag = decrypt(encryptedTag);
+    byte[] tag = encryptedTag;
+//    System.out.println("Decrypted u: " + new String(decrypted) + " tag: " + new String(tag));
+    bulletinBoard.get(idx).put(tag, decrypted);
+    System.out.println("--------------EXIT writeToBB--------------");
   }
 
   private byte[] decrypt(byte[] encrypted){
