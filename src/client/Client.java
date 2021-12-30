@@ -32,6 +32,7 @@ public class Client extends UnicastRemoteObject implements Remote {
   // Communication Details
   private final Map<Integer, CommunicationDetails> sendMap = new HashMap<>();
   private final Map<Integer, CommunicationDetails> receiveMap = new HashMap<>();
+  private final Map<String, Integer> userMap = new HashMap<>();
 
   public ServerIF serverIF;
 
@@ -44,6 +45,10 @@ public class Client extends UnicastRemoteObject implements Remote {
 
   public int getId() {
     return userId;
+  }
+
+  public int getUserId(String recipient){
+    return userMap.get(recipient);
   }
 
   public void start() throws RemoteException {
@@ -228,6 +233,7 @@ public class Client extends UnicastRemoteObject implements Remote {
       SecretKey sk = kg.generateKey();
       CommunicationDetails commDet = new CommunicationDetails(idx, tag, sk, username);
       sendMap.put(id, commDet);
+      userMap.put(username, id);
 
       FileOutputStream fileOut =
               new FileOutputStream("/tmp/commDet.ser");

@@ -28,7 +28,8 @@ public class ClientUI extends JFrame implements ActionListener {
   private JTextField textField;
   protected JTextArea textArea;
   protected JFrame mainFrame;
-  protected JButton privateMsgButton, startButton, sendButton, requestBumpButton, acceptBumpButton, refreshButton;
+  protected JButton privateMsgButton, startButton, sendButton,
+      requestBumpButton, acceptBumpButton, refreshButton;
   protected JPanel clientPanel, userPanel;
   protected JLabel idLabel;
 
@@ -85,15 +86,12 @@ public class ClientUI extends JFrame implements ActionListener {
 
   public JPanel getUsersPanel() {
     userPanel = new JPanel(new BorderLayout());
-
     JLabel userLabel = new JLabel("Current Users", JLabel.CENTER);
     userPanel.add(userLabel, BorderLayout.NORTH);
-
     idLabel = new JLabel("", JLabel.CENTER);
     userPanel.add(idLabel, BorderLayout.NORTH);
 
     setClientPanel(new String[]{"No other users"});
-
     userPanel.add(makeButtonPanel(), BorderLayout.SOUTH);
     userPanel.setBorder(blankBorder);
 
@@ -102,17 +100,10 @@ public class ClientUI extends JFrame implements ActionListener {
 
   public void setClientPanel(String[] currClients) {
     clientPanel = new JPanel(new BorderLayout());
-
     DefaultListModel<String> listModel = new DefaultListModel<>();
     for (String s : currClients) listModel.addElement(s);
+    if (currClients.length > 1) privateMsgButton.setEnabled(true);
 
-    if (currClients.length > 1) {
-      privateMsgButton.setEnabled(true);
-      requestBumpButton.setEnabled(true);
-      acceptBumpButton.setEnabled(true);
-    }
-
-    // Create the list and put it in a scroll pane.
     list = new JList<>(listModel);
     list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     list.setVisibleRowCount(8);
@@ -190,24 +181,25 @@ public class ClientUI extends JFrame implements ActionListener {
   }
 
   private void sendPrivateMessage() throws RemoteException {
-    int selection = list.getSelectedIndex();
+    int receiver = chatClient.getUserId(list.getSelectedValue());
     message = textField.getText();
     textField.setText("");
-    sendPrivate(selection);
+    sendPrivate(receiver);
   }
 
-  private void requestBump(){
+  private void requestBump() {
     String[] input = textField.getText().split(",");
     int receiver = Integer.parseInt(input[0]);
     String username = input[1];
     chatClient.bumpJson(receiver, username);
     currentUsers.put(username, receiver);
-    textArea.setText("Wait for the other user to accept the bump by typing your id and pressing accept bump \n");
+    textArea.setText(
+        "Wait for the other user to accept the bump by typing your id and pressing accept bump \n");
     updateUserList();
     privateMsgButton.setEnabled(true);
   }
 
-  private void acceptBump(){
+  private void acceptBump() {
     int bumpee = Integer.parseInt(textField.getText());
     String username = chatClient.receiveBumpJson(bumpee);
     chatClient.bumpJson(bumpee, username);
@@ -218,8 +210,8 @@ public class ClientUI extends JFrame implements ActionListener {
   }
 
   private void refresh() throws RemoteException {
-    int selection = list.getSelectedIndex();
-    getMessage(selection);
+    int receiver = chatClient.getUserId(list.getSelectedValue());
+    getMessage(receiver);
   }
 
   private void updateUserList() {
