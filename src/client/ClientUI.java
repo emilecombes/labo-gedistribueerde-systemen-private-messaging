@@ -200,13 +200,19 @@ public class ClientUI extends JFrame implements ActionListener {
   }
 
   private void acceptBump() {
-    int bumpee = Integer.parseInt(textField.getText());
-    String username = chatClient.receiveBumpJson(bumpee);
-    chatClient.bumpJson(bumpee, username);
-    currentUsers.put(username, bumpee);
-    textArea.setText("Bump from " + username + " accepted, wait for him to accept your bump \n");
-    updateUserList();
-    privateMsgButton.setEnabled(true);
+    int sender = Integer.parseInt(textField.getText());
+    String username = chatClient.receiveBumpJson(sender);
+    if (!chatClient.canSendTo(sender)) {
+      chatClient.bumpJson(sender, username);
+      currentUsers.put(username, sender);
+      textArea.setText("Bump from " + username + " accepted. " + username + " must now enter your" +
+          " id in the text field and press 'accept bump'.");
+      updateUserList();
+      privateMsgButton.setEnabled(true);
+    } else {
+      textArea.setText("Bumping process with " + username + " is finished. You can now " +
+          "communicate.\n");
+    }
   }
 
   private void refresh() throws RemoteException {
