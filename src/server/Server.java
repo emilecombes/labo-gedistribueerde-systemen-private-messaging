@@ -86,7 +86,6 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     assert decryptedIdx != null;
     ByteBuffer buff = ByteBuffer.wrap(decryptedIdx);
     int idx = buff.getInt();
-    //TODO
     byte[] decryptedTag = decrypt(encryptedTag);
 //    byte[] decryptedTag = encryptedTag;
     assert decryptedTag != null;
@@ -107,7 +106,11 @@ public class Server extends UnicastRemoteObject implements ServerIF {
       hashedTag = hash.digest();
       System.out.println("Tag na hashen: " + new String(hashedTag));
       System.out.println();
-      byte[] message = bulletinBoard.get(idx).get(hashedTag);
+      byte[] message = null;
+      for (Map.Entry<byte[], byte[]> e: bulletinBoard.get(idx).entrySet()){
+        if(Arrays.equals(e.getKey(), hashedTag)) message = e.getValue();
+      }
+//      byte[] message = bulletinBoard.get(idx).get(hashedTag);
       if(message != null){
         System.out.println("Opgehaald bericht: " + new String(message));
         System.out.println();

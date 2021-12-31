@@ -231,7 +231,7 @@ public class Client extends UnicastRemoteObject implements Remote {
       if (decryptedMessage.length > 0) {
         String[] message = new String(decryptedMessage).split("\\|");
         System.out.println("message[0]: " + message[0] + "message[1]: " + message[1] + "message[2]: " + message[2]);
-        int newIdx = Integer.parseInt(message[0]);
+        int newIdx = Integer.parseInt(message[1]);
 //        byte[] newTag = message[2].getBytes();
         int newTag = Integer.parseInt(message[2]);
         SecretKey newKey = generateNewReceiveKey(sender);
@@ -239,8 +239,8 @@ public class Client extends UnicastRemoteObject implements Remote {
         assert newKey != null;
         receiveMap.get(sender).setIdx(newIdx).setTag(newTag).setKey(newKey);
 
-        System.out.println(message[1]);
-        chatUI.textArea.append(message[1]);
+        System.out.println(message[0]);
+        chatUI.textArea.append(message[0]);
         chatUI.textArea.setCaretPosition(chatUI.textArea.getDocument().getLength());
       }
 
