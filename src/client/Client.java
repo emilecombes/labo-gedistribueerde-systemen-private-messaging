@@ -262,10 +262,12 @@ public class Client extends UnicastRemoteObject implements Remote {
       sendMap.put(id, commDet);
       userMap.put(username, id);
 
+      CommunicationDetails commDetTransfer = new CommunicationDetails(idx, tag, sk, this.userName);
+
       FileOutputStream fileOut =
               new FileOutputStream("tmp/commDet.ser");
       ObjectOutputStream out = new ObjectOutputStream(fileOut);
-      out.writeObject(commDet.setUsername(userName));
+      out.writeObject(commDetTransfer);
       out.close();
       fileOut.close();
       printSendMap();
@@ -303,6 +305,7 @@ public class Client extends UnicastRemoteObject implements Remote {
   }
 
   public void printSendMap() {
+    System.out.println("Klant " + userId);
     System.out.println("-----------INHOUD SENDMAP---------------");
     for(Map.Entry<Integer, CommunicationDetails> e: sendMap.entrySet()){
       System.out.println("___id: " + e.getKey());
@@ -311,6 +314,7 @@ public class Client extends UnicastRemoteObject implements Remote {
   }
 
   public void printRecieveMap() {
+    System.out.println("Klant " + userId);
     System.out.println("-----------INHOUD RECEIVEMAP---------------");
     for(Map.Entry<Integer, CommunicationDetails> e: receiveMap.entrySet()){
       System.out.println("___id: " + e.getKey());
