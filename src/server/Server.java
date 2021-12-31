@@ -72,7 +72,6 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     }
   }
 
-
   // Remote Methods
   @Override
   public int getUserId(){
@@ -87,7 +86,6 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     ByteBuffer buff = ByteBuffer.wrap(decryptedIdx);
     int idx = buff.getInt();
     byte[] decryptedTag = decrypt(encryptedTag);
-//    byte[] decryptedTag = encryptedTag;
     assert decryptedTag != null;
 
     ByteBuffer buffer = ByteBuffer.wrap(decryptedTag);
@@ -96,7 +94,6 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     printServer();
     System.out.println("--------------GetMessage--------------");
     System.out.println("Id aangekomen bij server: " + idx);
-//    System.out.println("Tag aangekomen bij server: " + new String(decryptedTag));
     System.out.println("Tag aangekomen bij server: " + tag);
 
     byte[] hashedTag = null;
@@ -110,20 +107,19 @@ public class Server extends UnicastRemoteObject implements ServerIF {
       for (Map.Entry<byte[], byte[]> e: bulletinBoard.get(idx).entrySet()){
         if(Arrays.equals(e.getKey(), hashedTag)) message = e.getValue();
       }
-//      byte[] message = bulletinBoard.get(idx).get(hashedTag);
       if(message != null){
         System.out.println("Opgehaald bericht: " + new String(message));
         System.out.println();
         bulletinBoard.get(idx).remove(hashedTag);
         System.out.println("--------------EXIT GetMessage--------------");
-        printServer();
+//        printServer();
         return message;
       }
     } catch(Exception e) {
       e.printStackTrace();
     }
     System.out.println("--------------EXIT GetMessage--------------");
-    printServer();
+//    printServer();
     return new byte[0];
   }
 
@@ -138,9 +134,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     ByteBuffer buff = ByteBuffer.wrap(decryptedIdx);
     int idx = buff.getInt();
     byte[] decrypted = decrypt(encryptedValue);
-//    byte[] decrypted = encryptedValue;
     byte[] tag = decrypt(encryptedTag);
-//    byte[] tag = encryptedTag;
     assert tag != null;
     assert decrypted != null;
 
@@ -148,11 +142,9 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     System.out.println("message aangekomen bij server: " + new String(decrypted));
     System.out.println("tag aangekomen bij server: " + new String(tag));
 
-
-//    System.out.println("Decrypted u: " + new String(decrypted) + " tag: " + new String(tag));
     bulletinBoard.get(idx).put(tag, decrypted);
     System.out.println("--------------EXIT writeToBB--------------");
-    printServer();
+//    printServer();
   }
 
   private byte[] decrypt(byte[] encrypted){

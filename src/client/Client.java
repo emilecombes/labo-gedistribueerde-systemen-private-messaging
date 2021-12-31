@@ -25,7 +25,6 @@ public class Client extends UnicastRemoteObject implements Remote {
   ClientUI chatUI;
 
   private final int serverSize = 10;
-  private final int tagSize = 100;
   private final Random random = new Random();
   Cipher serverCipher;
 
@@ -78,27 +77,11 @@ public class Client extends UnicastRemoteObject implements Remote {
     System.out.println("Client is listening...");
   }
 
-//  public static void main(String[] args) throws NoSuchAlgorithmException, RemoteException {
-//    Client c = new Client(new ClientUI(), "Bob");
-//    c.doe();
-//  }
-//
-//  public void doe() throws NoSuchAlgorithmException {
-//    int idx = random.nextInt(serverSize);
-////    byte[] tag = new byte[tagSize];
-////    random.nextBytes(tag);
-//    KeyGenerator kg = KeyGenerator.getInstance("AES");
-//    SecretKey sk = kg.generateKey();
-//    CommunicationDetails commDet = new CommunicationDetails(idx, tag, sk, "Bob");
-//    sendMap.put(1, commDet);
-//    generateNewSendKey(1);
-//  }
-
   private SecretKey generateNewSendKey(int id){
     try {
       SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
       byte[] salt = "salt".getBytes();
-      KeySpec spec = new PBEKeySpec(Base64.getEncoder().encodeToString(sendMap.get(id).getKey().getEncoded()).toCharArray(), salt, 1000, 16);
+      KeySpec spec = new PBEKeySpec(Base64.getEncoder().encodeToString(sendMap.get(id).getKey().getEncoded()).toCharArray(), salt, 1000, 256);
       SecretKey s = new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
       return s;
     } catch(Exception e) {
@@ -111,7 +94,7 @@ public class Client extends UnicastRemoteObject implements Remote {
     try {
       SecretKeyFactory kf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
       byte[] salt = "salt".getBytes();
-      KeySpec spec = new PBEKeySpec(Base64.getEncoder().encodeToString(receiveMap.get(id).getKey().getEncoded()).toCharArray(), salt, 1000, 16);
+      KeySpec spec = new PBEKeySpec(Base64.getEncoder().encodeToString(receiveMap.get(id).getKey().getEncoded()).toCharArray(), salt, 1000, 256);
       return new SecretKeySpec(kf.generateSecret(spec).getEncoded(), "AES");
     } catch(Exception e) {
       e.printStackTrace();
@@ -126,13 +109,10 @@ public class Client extends UnicastRemoteObject implements Remote {
     if(sendMap.containsKey(recipient)) {
       String prefix = "[PM from " + userName + "]: ";
       int nextIdx = random.nextInt(serverSize);
-//      byte[] nextTag = new byte[tagSize];
-//      random.nextBytes(nextTag);
       int nextTag = random.nextInt();
       String value = prefix + message + '|' + nextIdx + '|' + nextTag;
 
       System.out.println("value: " + value);
-      System.out.println();
 
       try {
         // E2EE
@@ -141,16 +121,12 @@ public class Client extends UnicastRemoteObject implements Remote {
         cipher.init(Cipher.ENCRYPT_MODE, key);
         byte[] encryptedValue = cipher.doFinal(value.getBytes());
 
-        System.out.println("encryptedValue: " + new String(encryptedValue));
-        System.out.println();
-
         //Assymetrische encryptie naar server
         ByteBuffer buff = ByteBuffer.allocate(Integer.BYTES);
         buff.putInt(sendMap.get(recipient).getIdx());
         byte[] encryptedIdx = encryptToServer(buff.array());
 
         byte[] encrypted = encryptToServer(encryptedValue);
-//        byte[] encrypted = encryptedValue;
 
         System.out.println("Huidige tag: " + sendMap.get(recipient).getTag());
 
@@ -158,24 +134,11 @@ public class Client extends UnicastRemoteObject implements Remote {
         ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
         buffer.putInt(sendMap.get(recipient).getTag());
         hash.update(buffer.array());
-//        hash.update(sendMap.get(recipient).getTag());
         byte[] hashTag = hash.digest();
-        System.out.println("Tag na hashen: " + new String(hashTag));
-        System.out.println();
         byte[] encryptedTag = encryptToServer(hashTag);
-//        byte[] encryptedTag = hashTag;
-//
         assert encryptedTag != null;
-        System.out.println("encryptedTag: " + new String(encryptedTag));
-        System.out.println();
 
-        System.out.println("idx: "+sendMap.get(recipient).getIdx());
-        System.out.println();
-        System.out.println(" u: "+new String(encrypted));
-        System.out.println();
-        System.out.println(" encryptedTag: "+new String(encryptedTag));
-        System.out.println();
-        // Write to bulletin board
+//        // Write to bulletin board
         serverIF.writeToBB(encryptedIdx,
             encrypted,
             encryptedTag
@@ -183,15 +146,13 @@ public class Client extends UnicastRemoteObject implements Remote {
 
         //Update eigen send waarden
         SecretKey newKey = generateNewSendKey(recipient);
-//        SecretKey newKey = key;
         assert newKey != null;
         sendMap.get(recipient).setIdx(nextIdx).setTag(nextTag).setKey(newKey);
-//        System.out.println("idx: "+sendMap.get(recipient).getIdx()+" tag: "+new String(sendMap.get(recipient).getTag())+" key: "+sendMap.get(recipient).getKey().toString());
-        System.out.println();
+
         //Weergeven
         String ownPrefix = "[Sent by you]: ";
         System.out.println(ownPrefix + message);
-        chatUI.textArea.append(ownPrefix + message);
+        chatUI.textArea.append(ownPrefix + message + "\n");
         chatUI.textArea.setCaretPosition(chatUI.textArea.getDocument().getLength());
 
       } catch (Exception e) {
@@ -214,12 +175,10 @@ public class Client extends UnicastRemoteObject implements Remote {
       ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
       buffer.putInt(receiveMap.get(sender).getTag());
       byte[] encryptedTag = encryptToServer(buffer.array());
-//      byte[] encryptedTag = encryptToServer(sendMap.get(sender).getTag());
 
       // Retrieve message from server
-//      byte[] encryptedMessage = serverIF.getMessage(receiveMap.get(sender).getIdx(), receiveMap.get(sender).getTag());
       byte[] encryptedMessage = serverIF.getMessage(encryptedIdx, encryptedTag);
-      System.out.println("EncryptedMessage from server: " + new String(encryptedMessage));
+      System.out.println("value: " + new String(encryptedMessage));
       byte[] decryptedMessage = new byte[0];
       try {
         Cipher cipher = Cipher.getInstance("AES");
@@ -233,15 +192,14 @@ public class Client extends UnicastRemoteObject implements Remote {
         String[] message = new String(decryptedMessage).split("\\|");
         System.out.println("message[0]: " + message[0] + "message[1]: " + message[1] + "message[2]: " + message[2]);
         int newIdx = Integer.parseInt(message[1]);
-//        byte[] newTag = message[2].getBytes();
+
         int newTag = Integer.parseInt(message[2]);
         SecretKey newKey = generateNewReceiveKey(sender);
-//        SecretKey newKey = receiveMap.get(sender).getKey();
         assert newKey != null;
         receiveMap.get(sender).setIdx(newIdx).setTag(newTag).setKey(newKey);
 
         System.out.println(message[0]);
-        chatUI.textArea.append(message[0]);
+        chatUI.textArea.append(message[0] + "\n");
         chatUI.textArea.setCaretPosition(chatUI.textArea.getDocument().getLength());
       }
 
@@ -255,8 +213,6 @@ public class Client extends UnicastRemoteObject implements Remote {
     try {
       int idx = random.nextInt(serverSize);
       int tag = random.nextInt();
-//      byte[] tag = new byte[tagSize];
-//      random.nextBytes(tag);
       KeyGenerator kg = KeyGenerator.getInstance("AES");
       SecretKey sk = kg.generateKey();
       CommunicationDetails commDet = new CommunicationDetails(idx, tag, sk, username);
@@ -271,8 +227,8 @@ public class Client extends UnicastRemoteObject implements Remote {
       out.writeObject(commDetTransfer);
       out.close();
       fileOut.close();
-      printSendMap();
-      printRecieveMap();
+//      printSendMap();
+//      printRecieveMap();
     } catch (NoSuchAlgorithmException | IOException e) {
       e.printStackTrace();
     }
@@ -291,8 +247,8 @@ public class Client extends UnicastRemoteObject implements Remote {
       return "";
     }
     receiveMap.put(id, commDet);
-    printSendMap();
-    printRecieveMap();
+//    printSendMap();
+//    printRecieveMap();
     return commDet.getUsername();
   }
 
