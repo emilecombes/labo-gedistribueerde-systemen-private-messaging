@@ -152,15 +152,19 @@ public class Client extends UnicastRemoteObject implements Remote {
         byte[] encrypted = encryptToServer(encryptedValue);
 //        byte[] encrypted = encryptedValue;
 
+        System.out.println("Huidige tag: " + sendMap.get(recipient).getTag());
+
         MessageDigest hash = MessageDigest.getInstance("SHA-512");
         ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
         buffer.putInt(sendMap.get(recipient).getTag());
         hash.update(buffer.array());
 //        hash.update(sendMap.get(recipient).getTag());
         byte[] hashTag = hash.digest();
-        byte[] encryptedTag = encryptToServer(hashTag);
-//        byte[] encryptedTag = hashTag;
-
+        System.out.println("Tag na hashen: " + new String(hashTag));
+        System.out.println();
+//        byte[] encryptedTag = encryptToServer(hashTag);
+        byte[] encryptedTag = hashTag;
+//
         System.out.println("encryptedTag: " + new String(encryptedTag));
         System.out.println();
 
@@ -264,6 +268,8 @@ public class Client extends UnicastRemoteObject implements Remote {
       out.writeObject(commDet.setUsername(userName));
       out.close();
       fileOut.close();
+      printSendMap();
+      printRecieveMap();
     } catch (NoSuchAlgorithmException | IOException e) {
       e.printStackTrace();
     }
@@ -282,6 +288,8 @@ public class Client extends UnicastRemoteObject implements Remote {
       return "";
     }
     receiveMap.put(id, commDet);
+    printSendMap();
+    printRecieveMap();
     return commDet.getUsername();
   }
 
@@ -292,6 +300,22 @@ public class Client extends UnicastRemoteObject implements Remote {
       e.printStackTrace();
     }
     return null;
+  }
+
+  public void printSendMap() {
+    System.out.println("-----------INHOUD SENDMAP---------------");
+    for(Map.Entry<Integer, CommunicationDetails> e: sendMap.entrySet()){
+      System.out.println("___id: " + e.getKey());
+      System.out.println("   username: " + e.getValue().getUsername() + ", idx: " + e.getValue().getIdx() + ", tag: " + e.getValue().getTag());
+    }
+  }
+
+  public void printRecieveMap() {
+    System.out.println("-----------INHOUD RECEIVEMAP---------------");
+    for(Map.Entry<Integer, CommunicationDetails> e: receiveMap.entrySet()){
+      System.out.println("___id: " + e.getKey());
+      System.out.println("   username: " + e.getValue().getUsername() + ", idx: " + e.getValue().getIdx() + ", tag: " + e.getValue().getTag());
+    }
   }
 
 

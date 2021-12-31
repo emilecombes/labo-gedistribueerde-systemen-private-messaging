@@ -92,6 +92,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     ByteBuffer buffer = ByteBuffer.wrap(decryptedTag);
     int tag = buffer.getInt();
 
+    printServer();
     System.out.println("--------------GetMessage--------------");
     System.out.println("Id aangekomen bij server: " + idx);
 //    System.out.println("Tag aangekomen bij server: " + new String(decryptedTag));
@@ -103,22 +104,27 @@ public class Server extends UnicastRemoteObject implements ServerIF {
       hash.update(decryptedTag);
       hashedTag = hash.digest();
       System.out.println("Tag na hashen: " + new String(hashedTag));
+      System.out.println();
       byte[] message = bulletinBoard.get(idx).get(hashedTag);
       if(message != null){
         System.out.println("Opgehaald bericht: " + new String(message));
+        System.out.println();
         bulletinBoard.get(idx).remove(hashedTag);
         System.out.println("--------------EXIT GetMessage--------------");
+        printServer();
         return message;
       }
     } catch(Exception e) {
       e.printStackTrace();
     }
     System.out.println("--------------EXIT GetMessage--------------");
+    printServer();
     return new byte[0];
   }
 
   @Override
   public void writeToBB(byte[] encryptedIdx, byte[] encryptedValue, byte[] encryptedTag) throws RemoteException {
+    printServer();
     System.out.println("--------------writeToBB--------------");
 
     //Decrypt from client
@@ -128,8 +134,8 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     int idx = buff.getInt();
     byte[] decrypted = decrypt(encryptedValue);
 //    byte[] decrypted = encryptedValue;
-    byte[] tag = decrypt(encryptedTag);
-//    byte[] tag = encryptedTag;
+//    byte[] tag = decrypt(encryptedTag);
+    byte[] tag = encryptedTag;
     assert tag != null;
     assert decrypted != null;
 
@@ -141,6 +147,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
 //    System.out.println("Decrypted u: " + new String(decrypted) + " tag: " + new String(tag));
     bulletinBoard.get(idx).put(tag, decrypted);
     System.out.println("--------------EXIT writeToBB--------------");
+    printServer();
   }
 
   private byte[] decrypt(byte[] encrypted){
@@ -155,5 +162,19 @@ public class Server extends UnicastRemoteObject implements ServerIF {
   @Override
   public PublicKey getPublicKey() throws RemoteException {
     return keyPair.getPublic();
+  }
+
+  public void printServer(){
+    System.out.println("-------------SERVERINHOUD------------------");
+    for(int i = 0; i < bulletinBoard.size(); i++){
+      System.out.println("_____Idx: " + i + "_____");
+      LinkedHashMap<byte[], byte[]> map = bulletinBoard.get(i);
+      for(Map.Entry<byte[], byte[]> e : map.entrySet()){
+        System.out.println("tag: " + new String(e.getKey()));
+        System.out.println(e.getKey());
+        System.out.println("message: " + new String(e.getValue()));
+        System.out.println(e.getValue());
+      }
+    }
   }
 }
