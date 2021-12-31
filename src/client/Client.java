@@ -162,9 +162,10 @@ public class Client extends UnicastRemoteObject implements Remote {
         byte[] hashTag = hash.digest();
         System.out.println("Tag na hashen: " + new String(hashTag));
         System.out.println();
-//        byte[] encryptedTag = encryptToServer(hashTag);
-        byte[] encryptedTag = hashTag;
+        byte[] encryptedTag = encryptToServer(hashTag);
+//        byte[] encryptedTag = hashTag;
 //
+        assert encryptedTag != null;
         System.out.println("encryptedTag: " + new String(encryptedTag));
         System.out.println();
 
