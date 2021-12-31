@@ -51,6 +51,10 @@ public class Client extends UnicastRemoteObject implements Remote {
     return userMap.get(recipient);
   }
 
+  public boolean canSendTo(int id){
+    return sendMap.containsKey(id);
+  }
+
   public void start() throws RemoteException {
     try {
       String hostName = "localhost";
