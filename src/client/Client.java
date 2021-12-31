@@ -211,7 +211,7 @@ public class Client extends UnicastRemoteObject implements Remote {
       byte[] encryptedIdx = encryptToServer(buff.array());
 
       ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
-      buffer.putInt(sendMap.get(sender).getTag());
+      buffer.putInt(receiveMap.get(sender).getTag());
       byte[] encryptedTag = encryptToServer(buffer.array());
 //      byte[] encryptedTag = encryptToServer(sendMap.get(sender).getTag());
 

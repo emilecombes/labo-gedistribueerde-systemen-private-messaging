@@ -86,7 +86,9 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     assert decryptedIdx != null;
     ByteBuffer buff = ByteBuffer.wrap(decryptedIdx);
     int idx = buff.getInt();
+    //TODO
     byte[] decryptedTag = decrypt(encryptedTag);
+//    byte[] decryptedTag = encryptedTag;
     assert decryptedTag != null;
 
     ByteBuffer buffer = ByteBuffer.wrap(decryptedTag);
@@ -133,6 +135,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     ByteBuffer buff = ByteBuffer.wrap(decryptedIdx);
     int idx = buff.getInt();
     byte[] decrypted = decrypt(encryptedValue);
+    //TODO
 //    byte[] decrypted = encryptedValue;
 //    byte[] tag = decrypt(encryptedTag);
     byte[] tag = encryptedTag;
