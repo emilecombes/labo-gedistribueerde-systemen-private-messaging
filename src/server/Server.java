@@ -89,9 +89,13 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     byte[] decryptedTag = decrypt(encryptedTag);
     assert decryptedTag != null;
 
+    ByteBuffer buffer = ByteBuffer.wrap(decryptedTag);
+    int tag = buffer.getInt();
+
     System.out.println("--------------GetMessage--------------");
     System.out.println("Id aangekomen bij server: " + idx);
-    System.out.println("Tag aangekomen bij server: " + new String(decryptedTag));
+//    System.out.println("Tag aangekomen bij server: " + new String(decryptedTag));
+    System.out.println("Tag aangekomen bij server: " + tag);
 
     byte[] hashedTag = null;
     try {

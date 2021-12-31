@@ -74,21 +74,21 @@ public class Client extends UnicastRemoteObject implements Remote {
     System.out.println("Client is listening...");
   }
 
-  public static void main(String[] args) throws NoSuchAlgorithmException, RemoteException {
-    Client c = new Client(new ClientUI(), "Bob");
-    c.doe();
-  }
-
-  public void doe() throws NoSuchAlgorithmException {
-    int idx = random.nextInt(serverSize);
-    byte[] tag = new byte[tagSize];
-    random.nextBytes(tag);
-    KeyGenerator kg = KeyGenerator.getInstance("AES");
-    SecretKey sk = kg.generateKey();
-    CommunicationDetails commDet = new CommunicationDetails(idx, tag, sk, "Bob");
-    sendMap.put(1, commDet);
-    generateNewSendKey(1);
-  }
+//  public static void main(String[] args) throws NoSuchAlgorithmException, RemoteException {
+//    Client c = new Client(new ClientUI(), "Bob");
+//    c.doe();
+//  }
+//
+//  public void doe() throws NoSuchAlgorithmException {
+//    int idx = random.nextInt(serverSize);
+////    byte[] tag = new byte[tagSize];
+////    random.nextBytes(tag);
+//    KeyGenerator kg = KeyGenerator.getInstance("AES");
+//    SecretKey sk = kg.generateKey();
+//    CommunicationDetails commDet = new CommunicationDetails(idx, tag, sk, "Bob");
+//    sendMap.put(1, commDet);
+//    generateNewSendKey(1);
+//  }
 
   private SecretKey generateNewSendKey(int id){
     try {
@@ -122,9 +122,10 @@ public class Client extends UnicastRemoteObject implements Remote {
     if(sendMap.containsKey(recipient)) {
       String prefix = "[PM from " + userName + "]: ";
       int nextIdx = random.nextInt(serverSize);
-      byte[] nextTag = new byte[tagSize];
-      random.nextBytes(nextTag);
-      String value = prefix + message + '|' + nextIdx + '|' + new String(nextTag);
+//      byte[] nextTag = new byte[tagSize];
+//      random.nextBytes(nextTag);
+      int nextTag = random.nextInt();
+      String value = prefix + message + '|' + nextIdx + '|' + nextTag;
 
       System.out.println("value: " + value);
       System.out.println();
@@ -148,7 +149,10 @@ public class Client extends UnicastRemoteObject implements Remote {
 //        byte[] encrypted = encryptedValue;
 
         MessageDigest hash = MessageDigest.getInstance("SHA-512");
-        hash.update(sendMap.get(recipient).getTag());
+        ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
+        buffer.putInt(sendMap.get(recipient).getTag());
+        hash.update(buffer.array());
+//        hash.update(sendMap.get(recipient).getTag());
         byte[] hashTag = hash.digest();
         byte[] encryptedTag = encryptToServer(hashTag);
 //        byte[] encryptedTag = hashTag;
@@ -173,7 +177,7 @@ public class Client extends UnicastRemoteObject implements Remote {
 //        SecretKey newKey = key;
         assert newKey != null;
         sendMap.get(recipient).setIdx(nextIdx).setTag(nextTag).setKey(newKey);
-        System.out.println("idx: "+sendMap.get(recipient).getIdx()+" tag: "+new String(sendMap.get(recipient).getTag())+" key: "+sendMap.get(recipient).getKey().toString());
+//        System.out.println("idx: "+sendMap.get(recipient).getIdx()+" tag: "+new String(sendMap.get(recipient).getTag())+" key: "+sendMap.get(recipient).getKey().toString());
         System.out.println();
         //Weergeven
         String ownPrefix = "[Sent by you]: ";
@@ -198,7 +202,10 @@ public class Client extends UnicastRemoteObject implements Remote {
       buff.putInt(receiveMap.get(sender).getIdx());
       byte[] encryptedIdx = encryptToServer(buff.array());
 
-      byte[] encryptedTag = encryptToServer(receiveMap.get(sender).getTag());
+      ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
+      buffer.putInt(sendMap.get(sender).getTag());
+      byte[] encryptedTag = encryptToServer(buffer.array());
+//      byte[] encryptedTag = encryptToServer(sendMap.get(sender).getTag());
 
       // Retrieve message from server
 //      byte[] encryptedMessage = serverIF.getMessage(receiveMap.get(sender).getIdx(), receiveMap.get(sender).getTag());
@@ -217,7 +224,8 @@ public class Client extends UnicastRemoteObject implements Remote {
         String[] message = new String(decryptedMessage).split("\\|");
         System.out.println("message[0]: " + message[0] + "message[1]: " + message[1] + "message[2]: " + message[2]);
         int newIdx = Integer.parseInt(message[0]);
-        byte[] newTag = message[2].getBytes();
+//        byte[] newTag = message[2].getBytes();
+        int newTag = Integer.parseInt(message[2]);
         SecretKey newKey = generateNewReceiveKey(sender);
 //        SecretKey newKey = receiveMap.get(sender).getKey();
         assert newKey != null;
@@ -237,8 +245,9 @@ public class Client extends UnicastRemoteObject implements Remote {
   public void bumpJson(int id, String username) {
     try {
       int idx = random.nextInt(serverSize);
-      byte[] tag = new byte[tagSize];
-      random.nextBytes(tag);
+      int tag = random.nextInt();
+//      byte[] tag = new byte[tagSize];
+//      random.nextBytes(tag);
       KeyGenerator kg = KeyGenerator.getInstance("AES");
       SecretKey sk = kg.generateKey();
       CommunicationDetails commDet = new CommunicationDetails(idx, tag, sk, username);

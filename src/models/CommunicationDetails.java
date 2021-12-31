@@ -8,11 +8,19 @@ import java.util.Arrays;
 
 public class CommunicationDetails implements Serializable {
   int idx;
-  byte[] tag;
+//  byte[] tag;
+  int tag;
   SecretKey secretKey;
   String username;
 
-  public CommunicationDetails(int idx, byte[] tag, SecretKey secretKey, String username) {
+//  public CommunicationDetails(int idx, byte[] tag, SecretKey secretKey, String username) {
+//    this.idx = idx;
+//    this.tag = tag;
+//    this.secretKey = secretKey;
+//    this.username = username;
+//  }
+
+  public CommunicationDetails(int idx, int tag, SecretKey secretKey, String username) {
     this.idx = idx;
     this.tag = tag;
     this.secretKey = secretKey;
@@ -28,11 +36,20 @@ public class CommunicationDetails implements Serializable {
     return this;
   }
 
-  public byte[] getTag() {
+//  public byte[] getTag() {
+//    return tag;
+//  }
+//
+//  public CommunicationDetails setTag(byte[] tag) {
+//    this.tag = tag;
+//    return this;
+//  }
+
+  public int getTag() {
     return tag;
   }
 
-  public CommunicationDetails setTag(byte[] tag) {
+  public CommunicationDetails setTag(int tag) {
     this.tag = tag;
     return this;
   }
@@ -54,8 +71,12 @@ public class CommunicationDetails implements Serializable {
     return this;
   }
 
+//  public String getBumpRequest() {
+//    return "key: " + Arrays.toString(secretKey.getEncoded()) + "\nindex: " + idx + "\ntag: " +
+//        Arrays.toString(tag);
+//  }
+
   public String getBumpRequest() {
-    return "key: " + Arrays.toString(secretKey.getEncoded()) + "\nindex: " + idx + "\ntag: " +
-        Arrays.toString(tag);
+    return "key: " + Arrays.toString(secretKey.getEncoded()) + "\nindex: " + idx + "\ntag: " + tag;
   }
 }
