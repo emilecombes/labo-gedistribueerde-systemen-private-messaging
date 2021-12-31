@@ -206,7 +206,7 @@ public class ClientUI extends JFrame implements ActionListener {
       chatClient.bumpJson(sender, username);
       currentUsers.put(username, sender);
       textArea.setText("Bump from " + username + " accepted. " + username + " must now enter your" +
-          " id in the text field and press 'accept bump'. \n");
+          " id in his/her text field and press 'accept bump'. \n");
       updateUserList();
       privateMsgButton.setEnabled(true);
     } else {

@@ -218,6 +218,8 @@ public class Client extends UnicastRemoteObject implements Remote {
       CommunicationDetails commDet = new CommunicationDetails(idx, tag, sk, username);
       sendMap.put(id, commDet);
       userMap.put(username, id);
+      System.out.println("Client " + userName
+          + " is now able to send messages to client " +  id + " (" + username + ").");
 
       CommunicationDetails commDetTransfer = new CommunicationDetails(idx, tag, sk, this.userName);
 
@@ -227,8 +229,6 @@ public class Client extends UnicastRemoteObject implements Remote {
       out.writeObject(commDetTransfer);
       out.close();
       fileOut.close();
-//      printSendMap();
-//      printRecieveMap();
     } catch (NoSuchAlgorithmException | IOException e) {
       e.printStackTrace();
     }
@@ -247,8 +247,6 @@ public class Client extends UnicastRemoteObject implements Remote {
       return "";
     }
     receiveMap.put(id, commDet);
-//    printSendMap();
-//    printRecieveMap();
     return commDet.getUsername();
   }
 
